@@ -91,7 +91,7 @@ export default function AppSidebar() {
           <input
             type="text"
             placeholder="Search..."
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2 pl-10 pr-4 text-sm focus:border-red-700 focus:outline-none"
+            className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2 pl-10 pr-4 text-sm focus:border-red-800 focus:outline-none"
           />
         </div>
       </SidebarHeader>
@@ -113,10 +113,11 @@ export default function AppSidebar() {
                     <SidebarMenuButton
                       render={<Link href={item.href} />}
                       isActive={active}
+                      style={{ margin: "0.1rem 0rem" }}
                       className={
                         active
-                          ? "bg-red-700 text-white hover:bg-red-800"
-                          : "hover:bg-red-700 hover:text-white"
+                          ? "bg-red-800 text-white hover:bg-red-800"
+                          : "hover:bg-red-800 hover:text-white"
                       }
                     >
                       <item.icon className="h-5 w-5" />
@@ -148,8 +149,8 @@ export default function AppSidebar() {
                       isActive={active}
                       className={
                         active
-                          ? "bg-red-700 text-white hover:bg-red-800"
-                          : "hover:bg-red-50 hover:text-red-700"
+                          ? "bg-red-800 text-white hover:bg-red-800"
+                          : "hover:bg-red-50 hover:text-red-800"
                       }
                     >
                       <item.icon className="h-5 w-5" />
@@ -166,7 +167,7 @@ export default function AppSidebar() {
       {/* Footer */}
       <SidebarFooter className="border-t p-4">
         <div className="flex items-center gap-3 rounded-xl p-2 hover:bg-red-50">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-700 font-semibold text-white">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-800 font-semibold text-white">
             SM
           </div>
 
