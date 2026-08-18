@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import {
-  LayoutDashboard,
+  // LayoutDashboard,
   HandCoins,
   PiggyBank,
   Wallet,
@@ -30,29 +30,29 @@ import {
 } from "@/components/ui/sidebar";
 
 const mainMenu = [
-  {
-    title: "Dashboard",
-    href: "/",
-    icon: LayoutDashboard,
-  },
+  // {
+  //   title: "Dashboard",
+  //   href: "/dashboard",
+  //   icon: LayoutDashboard,
+  // },
   {
     title: "Loans",
-    href: "/loans",
+    href: "/dashboard/loans",
     icon: HandCoins,
   },
   {
     title: "Shares",
-    href: "/shares",
+    href: "/dashboard/shares",
     icon: PiggyBank,
   },
   {
     title: "Dividends",
-    href: "/dividends",
+    href: "/dashboard/dividends",
     icon: Wallet,
   },
   {
     title: "Users",
-    href: "/users",
+    href: "/dashboard/users",
     icon: Users,
   },
 ];
@@ -60,12 +60,12 @@ const mainMenu = [
 const reports = [
   {
     title: "Analytics",
-    href: "/analytics",
+    href: "/dashboard/analytics",
     icon: BarChart3,
   },
   {
     title: "Reports",
-    href: "/reports",
+    href: "/dashboard/reports",
     icon: FileText,
   },
 ];

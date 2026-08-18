@@ -2,6 +2,23 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+
+@keyframes authPageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.auth-page-animation {
+  animation: authPageEnter 0.3s ease-out;
+};
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

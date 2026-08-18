@@ -1,7 +1,7 @@
-import Header from "./components/header";
+import React from "react";
 
-const Home = () => {
-  return <div className="">Home</div>;
+const Main = () => {
+  return <div>Main</div>;
 };
 
-export default Home;
+export default Main;
