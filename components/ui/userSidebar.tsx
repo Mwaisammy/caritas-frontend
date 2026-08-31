@@ -4,18 +4,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import {
-  // LayoutDashboard,
-  HandCoins,
-  PiggyBank,
-  Wallet,
-  Users,
-  BarChart3,
-  FileText,
-  Search,
-  ShieldUser,
-  HomeIcon,
-} from "lucide-react";
+import { BarChart3, FileText, Search } from "lucide-react";
 
 import {
   Sidebar,
@@ -31,39 +20,6 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar";
 
-const mainMenu = [
-  {
-    title: "Dashboard",
-    href: "/dashboard/main",
-    icon: HomeIcon,
-  },
-  {
-    title: "Loans",
-    href: "/dashboard/loans",
-    icon: HandCoins,
-  },
-  {
-    title: "Shares",
-    href: "/dashboard/shares",
-    icon: PiggyBank,
-  },
-  {
-    title: "Dividends",
-    href: "/dashboard/dividends",
-    icon: Wallet,
-  },
-  {
-    title: "Users",
-    href: "/dashboard/users",
-    icon: Users,
-  },
-  {
-    title: "Ceep",
-    href: "/dashboard/ceep",
-    icon: ShieldUser,
-  },
-];
-
 const reports = [
   {
     title: "Analytics",
@@ -77,7 +33,7 @@ const reports = [
   },
 ];
 
-export default function AppSidebar() {
+export default function UserSidebar() {
   const pathname = usePathname();
 
   return (
@@ -106,41 +62,7 @@ export default function AppSidebar() {
       {/* Content */}
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Main Menu</SidebarGroupLabel>
-
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {mainMenu.map((item) => {
-                const active =
-                  pathname === item.href ||
-                  pathname.startsWith(item.href + "/");
-
-                return (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                      render={<Link href={item.href} />}
-                      isActive={active}
-                      style={{ margin: "0.1rem 0rem" }}
-                      className={
-                        active
-                          ? "bg-red-800 text-white hover:bg-red-800"
-                          : "hover:bg-red-800 hover:text-white"
-                      }
-                    >
-                      <item.icon className="h-5 w-5" />
-                      <span>{item.title}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarSeparator className="my-4" />
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Reports</SidebarGroupLabel>
+          <SidebarGroupLabel>Main Menu </SidebarGroupLabel>
 
           <SidebarGroupContent>
             <SidebarMenu>
@@ -180,7 +102,7 @@ export default function AppSidebar() {
 
           <div>
             <p className="font-semibold text-gray-900">Samuel Mwai</p>
-            <p className="text-sm text-gray-500">Administrator</p>
+            <p className="text-sm text-gray-500">Member</p>
           </div>
         </div>
       </SidebarFooter>

@@ -12,7 +12,7 @@ const AuthLayout = ({ children }: React.PropsWithChildren) => {
       <div className="flex flex-col justify-center    overflow-hidden w-full max-w-md mx-auto p-4 ">
         {/* Page content animation */}
 
-        <div className="fixed top-80 w-full flex justify-between items-center">
+        <div className="fixed top-10 sm:top-60 md:top-15 w-full flex justify-between items-center">
           <AuthTabs />
         </div>
         <div key={pathName} className="auth-page-animation mt-6">

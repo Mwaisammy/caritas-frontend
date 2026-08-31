@@ -23,7 +23,7 @@ const UserDropdown = () => {
           render={
             <Button
               variant="outline"
-              className=" cursor-pointer rounded-full p-3"
+              className=" cursor-pointer rounded-full p-4"
             >
               <UserIcon className="size-4" />
             </Button>
