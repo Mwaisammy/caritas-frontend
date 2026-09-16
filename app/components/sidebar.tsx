@@ -77,7 +77,22 @@ const reports = [
   },
 ];
 
-export default function AppSidebar() {
+type AppSidebarProps = {
+  user: {
+    email: string;
+    name: string;
+  };
+};
+
+const initialsFor = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "CA";
+
+export default function AppSidebar({ user }: AppSidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -175,12 +190,16 @@ export default function AppSidebar() {
       <SidebarFooter className="border-t p-4">
         <div className="flex items-center gap-3 rounded-xl p-2 hover:bg-red-50">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-800 font-semibold text-white">
-            SM
+            {initialsFor(user.name)}
           </div>
 
           <div>
-            <p className="font-semibold text-gray-900">Samuel Mwai</p>
-            <p className="text-sm text-gray-500">Administrator</p>
+            <p className="max-w-40 truncate font-semibold text-gray-900">
+              {user.name}
+            </p>
+            <p className="max-w-40 truncate text-sm text-gray-500">
+              {user.email}
+            </p>
           </div>
         </div>
       </SidebarFooter>

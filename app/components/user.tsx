@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -7,14 +9,29 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  CreditCardIcon,
   LogOutIcon,
-  SettingsIcon,
   UserIcon,
 } from "lucide-react";
 import React from "react";
+import { useRouter } from "next/navigation";
+import { authClient } from "@/lib/auth-client";
 
-const UserDropdown = () => {
+type UserDropdownProps = {
+  user: {
+    email: string;
+    name: string;
+  };
+};
+
+const UserDropdown = ({ user }: UserDropdownProps) => {
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    await authClient.signOut();
+    router.replace("/login");
+    router.refresh();
+  };
+
   return (
     <div>
       <DropdownMenu>
@@ -29,21 +46,13 @@ const UserDropdown = () => {
             </Button>
           }
         />
-        <DropdownMenuContent>
-          <DropdownMenuItem>
-            <UserIcon />
-            Profile
-          </DropdownMenuItem>
-          <DropdownMenuItem>
-            <CreditCardIcon />
-            Billing
-          </DropdownMenuItem>
-          <DropdownMenuItem>
-            <SettingsIcon />
-            Settings
-          </DropdownMenuItem>
+        <DropdownMenuContent align="end" className="min-w-56">
+          <div className="px-2 py-1.5">
+            <p className="truncate text-sm font-medium">{user.name}</p>
+            <p className="truncate text-xs text-gray-500">{user.email}</p>
+          </div>
           <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive">
+          <DropdownMenuItem onClick={handleSignOut} variant="destructive">
             <LogOutIcon />
             Log out
           </DropdownMenuItem>

@@ -1,9 +1,16 @@
 import { Separator } from "@/components/ui/separator";
-import { Bell, MessageSquare, User } from "lucide-react";
+import { Bell, MessageSquare } from "lucide-react";
 import React from "react";
 import UserDropdown from "./user";
 
-const Header = () => {
+type HeaderProps = {
+  user: {
+    email: string;
+    name: string;
+  };
+};
+
+const Header = ({ user }: HeaderProps) => {
   return (
     <nav className=" text-black   p-6">
       <header className="flex justify-between items-center gap-4">
@@ -19,7 +26,7 @@ const Header = () => {
                 <MessageSquare className="size-3 md:size-4" />
               </li>
               <li>
-                <UserDropdown />
+                <UserDropdown user={user} />
               </li>
             </ul>
           </nav>

@@ -3,35 +3,37 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-export default function AuthTabs() {
-  const pathName = usePathname();
+const items = [
+  { href: "/login", label: "Sign in" },
+  { href: "/signup", label: "Register" },
+];
 
-  const isLogin = pathName === "/login";
-  const isSignUp = pathName === "/signup";
+export default function AuthTabs() {
+  const pathname = usePathname();
 
   return (
-    <div className="ml-4 flex items-center gap-2">
-      <Link
-        href="/login"
-        className={`rounded-md px-4 py-2  font-medium transition-all duration-300 text-xs md:text-sm ${
-          isLogin
-            ? "bg-rose-800 text-white shadow-sm"
-            : "text-gray-500 hover:text-black"
-        }} `}
-      >
-        Login
-      </Link>
+    <nav
+      aria-label="Authentication"
+      className="flex items-center rounded-xl bg-stone-100 p-1"
+    >
+      {items.map((item) => {
+        const active = pathname === item.href;
 
-      <Link
-        href="/signup"
-        className={`rounded-md px-4 py-2  font-medium transition-all duration-300 text-xs md:text-sm ${
-          isSignUp
-            ? "bg-rose-800 text-white shadow-sm"
-            : "text-gray-500 hover:text-black"
-        }`}
-      >
-        Sign Up
-      </Link>
-    </div>
+        return (
+          <Link
+            aria-current={active ? "page" : undefined}
+            className={`rounded-lg px-3 py-2 text-xs font-semibold transition-colors sm:px-4 sm:text-sm ${
+              active
+                ? "bg-white text-[#7d1d2d] shadow-sm"
+                : "text-stone-500 hover:text-stone-900"
+            }`}
+            href={item.href}
+            key={item.href}
+          >
+            {item.label}
+          </Link>
+        );
+      })}
+    </nav>
   );
 }
