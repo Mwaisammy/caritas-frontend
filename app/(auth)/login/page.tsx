@@ -1,50 +1,42 @@
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import LoginForm from "./login-form";
 
-const Login = () => {
+type LoginPageProps = {
+  searchParams: Promise<{ callbackUrl?: string }>;
+};
+
+const safeCallbackUrl = (callbackUrl?: string) => {
+  if (!callbackUrl?.startsWith("/") || callbackUrl.startsWith("//")) {
+    return "/dashboard";
+  }
+
+  return callbackUrl;
+};
+
+const Login = async ({ searchParams }: LoginPageProps) => {
+  const session = await auth.api.getSession({ headers: await headers() });
+  const { callbackUrl } = await searchParams;
+  const destination = safeCallbackUrl(callbackUrl);
+
+  if (session) {
+    redirect(destination);
+  }
+
   return (
-    <div className="flex flex-col justify-center items-center overflow-hidden w-full max-w-md mx-auto p-4 ">
-      <div className="text-center">
-        <h2 className="text-lg md:text-4xl font-bold">Welcome</h2>
-
-        <p className="text-sm md:text-xl">Please enter your login details</p>
+    <div className="w-full">
+      <div>
+        <p className="text-sm font-semibold text-[#9c2c40]">Welcome back</p>
+        <h1 className="mt-2 text-3xl font-bold tracking-[-0.035em] text-stone-950 sm:text-4xl">
+          Sign in to your account
+        </h1>
+        <p className="mt-3 max-w-sm text-sm leading-6 text-stone-500 sm:text-base">
+          Enter your staff credentials to continue to the administration
+          workspace.
+        </p>
       </div>
-
-      <div className="flex flex-col gap-4 mt-6">
-        <div>
-          <label className="text-gray-600 text-xs md:text-sm" htmlFor="">
-            Email Address
-          </label>
-          <Input
-            className="py-4 text-xs md:text-sm"
-            type="email"
-            placeholder="Enter your email"
-          />
-        </div>
-
-        <div>
-          <span className="flex align-middle justify-between">
-            <label className="text-gray-600  text-xs md:text-sm" htmlFor="">
-              Password
-            </label>
-
-            <a
-              href="/forgot-password"
-              className="hover:text-blue-500  text-xs md:text-sm"
-            >
-              Forgot password?
-            </a>
-          </span>
-          <Input
-            className="py-4 text-xs md:text-sm"
-            type="password"
-            placeholder="Enter your password"
-          />
-        </div>
-        <Button className="w-full cursor-pointer mt-8 px-4 py-2 bg-rose-800 text-white hover:bg-rose-900 text-xs md:text-sm">
-          Login
-        </Button>
-      </div>
+      <LoginForm callbackUrl={destination} />
     </div>
   );
 };
