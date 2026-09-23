@@ -4,7 +4,6 @@ import StaffTestCard from "./staff-test-card";
 
 const Home = async () => {
   const session = await auth.api.getSession({headers: await headers()});
-  console.log({email: session?.user.email});
 
   return (
     <div className="mx-auto w-full max-w-6xl px-5 pb-12 sm:px-8">
