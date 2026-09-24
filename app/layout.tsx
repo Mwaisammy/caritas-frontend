@@ -1,7 +1,6 @@
 import type {Metadata} from "next";
 import {Plus_Jakarta_Sans} from "next/font/google";
 import "./globals.css";
-import {TRPCReactProvider} from "@/trpc/client";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta-sans",
@@ -25,9 +24,7 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${plusJakartaSans.variable} h-full antialiased`}
     >
-      <body className="min-h-screen font-sans">
-        <TRPCReactProvider>{children}</TRPCReactProvider>
-      </body>
+      <body className="min-h-screen font-sans">{children}</body>
     </html>
   );
 }

@@ -7,6 +7,24 @@ export type StaffRole =
   | "chairperson"
   | "secretary"
 
+  export type Guarantor =  {
+    guarantorId: string;
+    guaranteedAmount: string;
+
+  }
+
+export interface ApplyForLoanRequest {
+  memberId: string;
+  branchId: number;
+  principal: string;
+  interestRate: string;
+  repaymentPeriodMonths: number;
+  guarantors: Guarantor[];
+  applicantSharePledgeAmount: number;
+
+
+}
+
 export interface StaffUser {
   id: string
   authUserId: string
