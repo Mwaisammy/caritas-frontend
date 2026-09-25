@@ -1,7 +1,3 @@
-import React from "react";
-
-const MainLayout = () => {
-  return <div>MainLayout</div>;
-};
-
-export default MainLayout;
+export default function MainLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  return children;
+}

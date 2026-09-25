@@ -1,7 +1,7 @@
-import type {Metadata} from "next";
-import {Plus_Jakarta_Sans} from "next/font/google";
+import type { Metadata } from "next";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
-import {TRPCReactProvider} from "@/trpc/client";
+import { TRPCReactProvider } from "@/trpc/client";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta-sans",

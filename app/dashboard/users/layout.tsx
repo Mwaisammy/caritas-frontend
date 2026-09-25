@@ -1,6 +1,6 @@
 import React from "react";
 
-const LoansLayout = ({
+const UsersLayout = ({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -8,4 +8,4 @@ const LoansLayout = ({
   return <div>{children}</div>;
 };
 
-export default LoansLayout;
+export default UsersLayout;
