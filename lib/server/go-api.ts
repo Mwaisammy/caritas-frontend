@@ -43,7 +43,7 @@ async function getAuthorization(requestId: string) {
   return `Bearer ${token}`;
 }
 
-async function post<T>(path: string, body: unknown): Promise<T> {
+export async function goApiPost<T>(path: string, body: unknown): Promise<T> {
   const requestId = randomUUID();
   const authorization = await getAuthorization(requestId);
   let response: Response;
@@ -79,7 +79,7 @@ async function post<T>(path: string, body: unknown): Promise<T> {
 }
 
 export function createStaffUser(input: CreateStaffUserRequest) {
-  return post<CreateStaffUserResponse>(
+  return goApiPost<CreateStaffUserResponse>(
     "/api/v1/auth/create-staff-user",
     input,
   );

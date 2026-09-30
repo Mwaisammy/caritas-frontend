@@ -157,6 +157,21 @@ export interface UpdateMemberStatusResponse {
   updatedAt: string
 }
 
+export interface CloseMemberRequest {
+  memberId: string
+  reason: string
+}
+
+export interface CloseMemberResponse {
+  success: boolean
+}
+
+export interface GetMemberStatusHistoryRequest {
+  memberId: string
+  pageSize?: number
+  pageToken?: string
+}
+
 export interface GetMemberStatusHistoryResponse {
   transitions: Array<{
     fromStatus: string
