@@ -124,8 +124,8 @@ export default async function MemberDetailsPage({
                 </h1>
                 <MemberStatusBadge status={member.status} />
               </div>
-              <p className="mt-1 font-mono text-xs text-stone-500">
-                Member no. {member.memberNumber} · {member.id}
+              <p className="mt-1 font-mono text-sm text-stone-500">
+                Member no. {member.memberNumber}
               </p>
             </div>
             <EditMemberSidebar member={member} />
@@ -171,9 +171,7 @@ export default async function MemberDetailsPage({
                     icon={MapPin}
                     label="Address"
                     value={
-                      <span className="wrap-anywhere">
-                        {personal?.address}
-                      </span>
+                      <span className="wrap-anywhere">{personal?.address}</span>
                     }
                   />
                   <InfoItem

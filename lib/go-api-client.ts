@@ -181,3 +181,53 @@ export interface GetMemberStatusHistoryResponse {
   }>
   nextPageToken: string
 }
+
+// Share money is named because balances and transaction forms use the same protobuf shape.
+export interface ShareMoney {
+  currencyCode: string
+  units: string
+  nanos: number
+}
+
+// The status union keeps filters and badges aligned with the share service contract.
+export type ShareAccountStatus =
+  | "SHARE_ACCOUNT_STATUS_UNSPECIFIED"
+  | "SHARE_ACCOUNT_STATUS_ACTIVE"
+  | "SHARE_ACCOUNT_STATUS_DORMANT"
+  | "SHARE_ACCOUNT_STATUS_CLOSED"
+
+// The transaction union prevents the UI from inventing unsupported transaction categories.
+export type ShareTransactionType =
+  | "SHARE_TRANSACTION_TYPE_UNSPECIFIED"
+  | "SHARE_TRANSACTION_TYPE_PURCHASE"
+  | "SHARE_TRANSACTION_TYPE_WITHDRAWAL"
+  | "SHARE_TRANSACTION_TYPE_DIVIDEND"
+  | "SHARE_TRANSACTION_TYPE_REVERSAL"
+  | "SHARE_TRANSACTION_TYPE_ADJUSTMENT"
+
+// ShareAccount includes the small member summary needed to identify rows without extra member requests.
+export interface ShareAccount {
+  id: string
+  memberId: string
+  memberNumber?: string
+  memberName?: string
+  branchId: string
+  status: ShareAccountStatus
+  openedAt: string
+  createdAt: string
+  updatedAt: string
+}
+
+// ShareTransaction is shared by transaction tables, charts, and reversal actions.
+export interface ShareTransaction {
+  id: string
+  shareAccountId: string
+  type: ShareTransactionType
+  amount: ShareMoney
+  balanceAfter: ShareMoney
+  referenceId: string
+  reversalOf: string
+  reason: string
+  originatorId: string
+  createdAt: string
+}
