@@ -66,7 +66,7 @@ export async function goApiPost<T>(path: string, body: unknown): Promise<T> {
       error instanceof DOMException && error.name === "TimeoutError" ? 504 : 502;
     throw new GoApiError(status, requestId, {cause: error});
   }
-
+// TODO-check error handling right here
   if (!response.ok) {
     throw new GoApiError(response.status, requestId);
   }

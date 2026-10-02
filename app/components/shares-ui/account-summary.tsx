@@ -21,14 +21,10 @@ export function AccountSummary({
   account,
   balance,
   latest,
-  memberName,
-  memberNo,
 }: {
   account: ShareAccount;
   balance?: ShareMoney;
   latest?: ShareTransaction;
-  memberName?: string;
-  memberNo?: string;
 }) {
   const cards = [
     {
@@ -44,15 +40,9 @@ export function AccountSummary({
       icon: Activity,
     },
     {
-      label: "Member ID",
-      value: memberNo,
+      label: "Member No",
+      value: account.memberNumber,
       detail: "Linked member",
-      icon: UserRound,
-    },
-    {
-      label: "Member Name",
-      value: memberName,
-      detail: "Account holder",
       icon: UserRound,
     },
     {
@@ -64,7 +54,7 @@ export function AccountSummary({
   ];
   return (
     <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      {cards.map(({label, value, detail, icon: Icon}) => (
+      {cards.map(({ label, value, detail, icon: Icon }) => (
         <div
           className="min-w-0 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm"
           key={label}
