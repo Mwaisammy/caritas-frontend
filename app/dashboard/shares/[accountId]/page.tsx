@@ -1,17 +1,17 @@
-import { notFound } from "next/navigation";
+import {notFound} from "next/navigation";
 
-import { AccountSummary } from "@/app/components/shares-ui/account-summary";
-import { BalanceChart } from "@/app/components/shares-ui/balance-chart";
-import { ShareAccountHeader } from "@/app/components/shares-ui/share-account-header";
-import { ShareTransactionList } from "@/app/components/shares-ui/share-transaction-list";
-import { TransactionBars } from "@/app/components/shares-ui/transaction-bars";
-import { GoApiError } from "@/lib/server/go-api";
+import {AccountSummary} from "@/app/components/shares-ui/account-summary";
+import {BalanceChart} from "@/app/components/shares-ui/balance-chart";
+import {ShareAccountHeader} from "@/app/components/shares-ui/share-account-header";
+import {ShareTransactionList} from "@/app/components/shares-ui/share-transaction-list";
+import {TransactionBars} from "@/app/components/shares-ui/transaction-bars";
+import {GoApiError} from "@/lib/server/go-api";
 import {
   getShareAccount,
   getShareBalance,
   listShareTransactions,
 } from "@/lib/server/shares-api";
-import { SHARE_BRANCH_ID, SHARE_TRANSACTION_PAGE_SIZE } from "../config";
+import {SHARE_BRANCH_ID, SHARE_TRANSACTION_PAGE_SIZE} from "../config";
 
 // decodeTrail rejects malformed cursor history instead of letting it break account rendering.
 function decodeTrail(value: string) {
@@ -47,10 +47,10 @@ export default async function ShareAccountPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ accountId: string }>;
+  params: Promise<{accountId: string}>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const [{ accountId }, query] = await Promise.all([params, searchParams]);
+  const [{accountId}, query] = await Promise.all([params, searchParams]);
   const pageToken = typeof query.pageToken === "string" ? query.pageToken : "";
   const trail = decodeTrail(typeof query.trail === "string" ? query.trail : "");
   let accountResult;
@@ -65,11 +65,11 @@ export default async function ShareAccountPage({
   }
   if (!accountResult.account) notFound();
   const [balanceResult, activity] = await Promise.all([
-    getShareBalance({ accountId, consistencyStrong: true }),
+    getShareBalance({accountId, consistencyStrong: true}),
     listShareTransactions({
       accountId,
       pageSize: SHARE_TRANSACTION_PAGE_SIZE,
-      ...(pageToken && { pageToken }),
+      ...(pageToken && {pageToken}),
     }),
   ]);
   const transactions = activity.transactions ?? [];
@@ -85,6 +85,8 @@ export default async function ShareAccountPage({
         <ShareAccountHeader account={accountResult.account} />
         <AccountSummary
           account={accountResult.account}
+          memberNo={accountResult.account.memberNumber}
+          memberName={accountResult.account.memberName}
           balance={balanceResult.balance}
           latest={transactions[0]}
         />
