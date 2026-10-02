@@ -42,19 +42,21 @@ function sharesUrl(status: string, pageToken = "", trail: string[] = []) {
 // ShareLoadError turns a service failure into a useful retry path without exposing backend details.
 function ShareLoadError({ error }: { error: unknown }) {
   const reference = error instanceof GoApiError ? error.requestId : undefined;
+  const status = error instanceof GoApiError ? error.status : 0;
+  const messages = {
+    400: "Check your search: enter a positive whole member number or an exact national ID.",
+    401: "Your session has expired. Sign in again and retry.",
+    403: "You do not have permission to view share accounts.",
+    502: "The share service is unavailable. Please try again shortly.",
+    503: "The share service is unavailable. Please try again shortly.",
+    504: "The share service took too long to respond. Please try again.",
+  };
+  const message = messages[status as keyof typeof messages] ?? "The request failed. Please try again or contact support with the reference below.";
   return (
     <div className="rounded-2xl border border-red-200 bg-red-50 p-8 text-center">
-      <h2 className="text-lg font-semibold text-red-950">
-        Share accounts could not be loaded
-      </h2>
-      <p className="mt-2 text-sm text-red-700">
-        Check that the share service is available, then try again.
-      </p>
-      {reference ? (
-        <p className="mt-3 font-mono text-xs text-red-600">
-          Reference: {reference}
-        </p>
-      ) : null}
+      <h2 className="text-lg font-semibold text-red-950">Share accounts could not be loaded</h2>
+      <p className="mt-2 text-sm text-red-700">{message}</p>
+      {reference ? <p className="mt-3 font-mono text-xs text-red-600">Reference: {reference}</p> : null}
       <Link
         className="mt-5 inline-flex h-10 items-center rounded-lg border border-red-200 bg-white px-4 text-sm font-semibold text-red-800"
         href="/dashboard/shares"
@@ -98,7 +100,8 @@ export default async function SharesPage({
         ...(status && { statusFilter: status }),
       }));
   } catch (error) {
-    loadError = error;
+    if (!(lookup && error instanceof GoApiError && error.status === 404))
+      loadError = error;
   }
   const previous = trail.length
     ? sharesUrl(status, trail[trail.length - 1], trail.slice(0, -1))
@@ -120,7 +123,7 @@ export default async function SharesPage({
           <ShareAccountList
             accounts={accounts}
             nextHref={lookup ? undefined : next}
-            page={trail.length + 1}
+            page={lookup ? 1 : trail.length + 1}
             previousHref={lookup ? undefined : previous}
           />
         )}
