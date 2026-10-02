@@ -1,0 +1,7 @@
+import {CalendarDays, Clock3, Percent, WalletCards} from "lucide-react";
+
+import type {Loan} from "@/lib/go-api-client";
+import {formatLoanDate, formatLoanMoney, loanLabel} from "./loan-badges";
+
+// LoanSummary exposes authoritative terms and lifecycle dates before administrators take action.
+export function LoanSummary({loan, previousStatus, lastUpdated}: {loan: Loan; previousStatus: string; lastUpdated: string}) { const cards = [{label: "Principal", value: formatLoanMoney(loan.principal), detail: "Original requested amount", icon: WalletCards}, {label: "Interest rate", value: `${loan.interestRate}%`, detail: "Backend percentage rate", icon: Percent}, {label: "Repayment term", value: `${loan.repaymentPeriodMonths} months`, detail: `Applied ${formatLoanDate(loan.createdAt)}`, icon: Clock3}, {label: "Last status change", value: formatLoanDate(lastUpdated, true), detail: previousStatus ? `From ${loanLabel(previousStatus)}` : "No previous status", icon: CalendarDays}]; return <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{cards.map(({label, value, detail, icon: Icon}) => <div className="min-w-0 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm" key={label}><div className="flex items-center justify-between"><p className="text-sm text-stone-500">{label}</p><Icon className="size-4 text-[#a91521]" /></div><p className="mt-4 break-words text-xl font-bold">{value}</p><p className="mt-2 text-xs text-stone-500">{detail}</p></div>)}</section>; }
