@@ -18,7 +18,7 @@ const transactionSchema = z.object({
 });
 
 // The action state gives every share dialog the same success and field-error contract.
-export type ShareActionState = null | {ok: true; message: string; accountId?: string} | {ok: false; message: string; fieldErrors?: Record<string, string[] | undefined>};
+export type ShareActionState = null | {ok: true; message: string; accountId?: string} | {ok: false; message: string; retry?: boolean; fieldErrors?: Record<string, string[] | undefined>};
 
 // Money conversion is centralized so every mutation sends identical protobuf money values.
 function moneyFrom(value: string): ShareMoney {
@@ -37,10 +37,10 @@ async function currentUserId() {
 function failure(error: unknown): ShareActionState {
   if (error instanceof GoApiError) {
     const messages: Record<number, string> = {400: "Check the details and try again.", 401: "Your session has expired.", 403: "You do not have permission for this action.", 404: "The share record was not found.", 409: "This action conflicts with the account's current state.", 504: "The share service took too long to respond."};
-    return {ok: false, message: `${messages[error.status] ?? "The share service is unavailable."} Reference: ${error.requestId}`};
+    return {ok: false, retry: ![400, 401, 403, 404, 409, 422].includes(error.status), message: `${messages[error.status] ?? "The share service is unavailable."} Reference: ${error.requestId}`};
   }
   console.error("Unexpected share action failure", error);
-  return {ok: false, message: "Something went wrong. Please try again."};
+  return {ok: false, retry: true, message: "Something went wrong. Please try again."};
 }
 
 // Opens a share account after validating the only administrator-supplied identifier.
@@ -58,7 +58,7 @@ export async function openShareAccountAction(_previous: ShareActionState, formDa
 
 // Records a purchase and refreshes both the account detail and directory views.
 export async function purchaseSharesAction(_previous: ShareActionState, formData: FormData): Promise<ShareActionState> {
-  const parsed = transactionSchema.safeParse(Object.fromEntries(formData));
+  const parsed = transactionSchema.extend({referenceId: z.uuid()}).safeParse(Object.fromEntries(formData));
   if (!parsed.success) return {ok: false, message: "Check the purchase details.", fieldErrors: parsed.error.flatten().fieldErrors};
   try {
     const originatorId = await currentUserId();
@@ -67,13 +67,14 @@ export async function purchaseSharesAction(_previous: ShareActionState, formData
     revalidatePath(`/dashboard/shares/${parsed.data.accountId}`);
     return {ok: true, message: "Share purchase recorded."};
   } catch (error) {
+    if (error instanceof GoApiError && error.status === 409) return {ok: false, message: "This reference was already used with a different amount. Review the original transaction."};
     return failure(error);
   }
 }
 
 // Records a withdrawal while leaving balance enforcement to the authoritative share service.
 export async function withdrawSharesAction(_previous: ShareActionState, formData: FormData): Promise<ShareActionState> {
-  const parsed = transactionSchema.safeParse(Object.fromEntries(formData));
+  const parsed = transactionSchema.extend({referenceId: z.uuid()}).safeParse(Object.fromEntries(formData));
   if (!parsed.success) return {ok: false, message: "Check the withdrawal details.", fieldErrors: parsed.error.flatten().fieldErrors};
   try {
     const originatorId = await currentUserId();
@@ -82,6 +83,7 @@ export async function withdrawSharesAction(_previous: ShareActionState, formData
     revalidatePath(`/dashboard/shares/${parsed.data.accountId}`);
     return {ok: true, message: "Share withdrawal recorded."};
   } catch (error) {
+    if (error instanceof GoApiError && error.status === 409) return {ok: false, message: "This reference was already used with a different amount. Review the original transaction."};
     return failure(error);
   }
 }
