@@ -12,6 +12,28 @@ type HeaderProps = {
   };
 };
 
+const routeTitles: Record<string, string> = {
+  main: "Dashboard",
+  loans: "Loans",
+  shares: "Shares",
+  dividends: "Dividends",
+  members: "Members",
+  users: "Users",
+  ceep: "CEEP",
+  analytics: "Analytics",
+  reports: "Reports",
+};
+
+function titleFromPath(pathname: string) {
+  const section = pathname.split("/").filter(Boolean)[1];
+  if (!section) return "Dashboard";
+
+  return routeTitles[section] ?? section
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/[-_]/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
 const Header = ({ user }: HeaderProps) => {
   const section = usePathname().split("/")[2] || "main";
   const title =

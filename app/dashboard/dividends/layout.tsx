@@ -1,7 +1,5 @@
-import React from "react";
-
-const DividendsLayout = () => {
-  return <div>DividendsLayout</div>;
-};
-
-export default DividendsLayout;
+export default function DividendsLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
+  return children;
+}
