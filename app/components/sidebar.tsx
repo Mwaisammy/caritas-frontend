@@ -38,9 +38,9 @@ const mainMenu = [
     icon: HomeIcon,
   },
   {
-    title: "Loans",
-    href: "/dashboard/loans",
-    icon: HandCoins,
+    title: "Members",
+    href: "/dashboard/members",
+    icon: Users,
   },
   {
     title: "Shares",
@@ -48,14 +48,14 @@ const mainMenu = [
     icon: PiggyBank,
   },
   {
+    title: "Loans",
+    href: "/dashboard/loans",
+    icon: HandCoins,
+  },
+  {
     title: "Dividends",
     href: "/dashboard/dividends",
     icon: Wallet,
-  },
-  {
-    title: "Users",
-    href: "/dashboard/users",
-    icon: Users,
   },
   {
     title: "Ceep",

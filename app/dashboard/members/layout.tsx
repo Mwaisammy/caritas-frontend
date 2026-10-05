@@ -1,7 +1,11 @@
 import React from "react";
 
-const UsersLayout = () => {
-  return <div>UsersLayout</div>;
+const MembersLayout = ({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) => {
+  return <div className="min-w-0">{children}</div>;
 };
 
-export default UsersLayout;
+export default MembersLayout;

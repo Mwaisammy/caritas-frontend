@@ -1,6 +1,6 @@
 "use client";
 
-import { Separator } from "@/components/ui/separator";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Bell, MessageSquare } from "lucide-react";
 import { usePathname } from "next/navigation";
 import UserDropdown from "./user";
@@ -35,32 +35,33 @@ function titleFromPath(pathname: string) {
 }
 
 const Header = ({ user }: HeaderProps) => {
-  const pathname = usePathname();
-  const title = titleFromPath(pathname);
+  const section = usePathname().split("/")[2] || "main";
+  const title =
+    section === "main"
+      ? "Dashboard"
+      : section.charAt(0).toUpperCase() + section.slice(1);
 
   return (
-    <nav className=" text-black   p-6">
-      <header className="flex justify-between items-center gap-4">
-        <h1 className="text-sm sm:text-xl md:text-2xl font-bold">{title}</h1>
+    <header className="sticky top-0 z-30 flex items-center justify-between gap-4 border-b bg-white/95 px-4 py-4 text-black backdrop-blur sm:px-6">
+      <div className="flex min-w-0 items-center gap-3">
+        <SidebarTrigger className="shrink-0" />
+        <h1 className="truncate text-sm font-bold sm:text-xl md:text-2xl">
+          {title}
+        </h1>
+      </div>
 
-        <div>
-          <nav className="flex justify-center items-center gap-4">
-            <ul className="flex items-center gap-4">
-              <li>
-                <Bell className="size-3 md:size-4" />
-              </li>
-              <li>
-                <MessageSquare className="size-3 md:size-4" />
-              </li>
-              <li>
-                <UserDropdown user={user} />
-              </li>
-            </ul>
-          </nav>
-        </div>
-      </header>
-      <Separator className="my-4" />
-    </nav>
+      <ul className="flex shrink-0 items-center gap-4">
+        <li>
+          <Bell className="size-3 md:size-4" />
+        </li>
+        <li>
+          <MessageSquare className="size-3 md:size-4" />
+        </li>
+        <li>
+          <UserDropdown user={user} />
+        </li>
+      </ul>
+    </header>
   );
 };
 

@@ -1,0 +1,7 @@
+import {CalendarClock} from "lucide-react";
+
+import type {RepaymentSchedule as ScheduleItem} from "@/lib/go-api-client";
+import {formatLoanDate, formatLoanMoney, LoanBadge} from "./loan-badges";
+
+// RepaymentSchedule presents every returned installment in a compact responsive table.
+export function RepaymentSchedule({schedule}: {schedule: ScheduleItem[]}) { return <section className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm"><div className="flex items-center justify-between border-b px-5 py-4"><div><h2 className="font-semibold">Repayment schedule</h2><p className="mt-1 text-xs text-stone-500">Due dates and installment states</p></div><CalendarClock className="size-5 text-stone-400" /></div>{schedule.length ? <div className="overflow-x-auto"><table className="w-full min-w-[600px] text-left text-sm"><thead className="bg-stone-50 text-xs uppercase text-stone-500"><tr><th className="px-6 py-3">Installment</th><th className="px-6 py-3">Due date</th><th className="px-6 py-3">Amount due</th><th className="px-6 py-3">Status</th></tr></thead><tbody className="divide-y">{schedule.map((item) => <tr key={item.id}><td className="px-6 py-4 font-semibold">#{item.installmentNo}</td><td className="px-6 py-4 text-stone-600">{formatLoanDate(item.dueDate)}</td><td className="px-6 py-4 font-semibold">{formatLoanMoney(item.amountDue)}</td><td className="px-6 py-4"><LoanBadge status={item.status} /></td></tr>)}</tbody></table></div> : <p className="p-10 text-center text-sm text-stone-500">No repayment schedule is available.</p>}</section>; }
