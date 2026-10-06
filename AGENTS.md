@@ -12,7 +12,9 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Surprise me with less not more
 - Maintain a minimal git diff
 - For every function/method/type/emun/interface you add beyond the call logic , add a comment explaining why it exists and what breaks if you remove it. If you can't justify do not add it.
-- A function/method should not exceed 30 lines of code, otherwise it is over-engineered. It should always be under 30 lines, but tell me what you would cut instead.
+
+Keep functions focused and readable. Prefer straightforward code over abstractions. Don’t compress JSX or extract components merely to meet a line-count limit.
+
 - Do not introduce classes
 - Do not introduce generics
 - Do not write tests until I say so

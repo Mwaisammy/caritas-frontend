@@ -85,6 +85,11 @@ export default async function ShareAccountPage({
         <ShareAccountHeader account={accountResult.account} />
         <AccountSummary
           account={accountResult.account}
+<<<<<<< HEAD
+=======
+          memberNo={accountResult.account.memberNumber as string}
+          memberName={accountResult.account.memberName}
+>>>>>>> 521cf45b1a03493498358c748d5346b79cde9188
           balance={balanceResult.balance}
           latest={transactions[0]}
         />

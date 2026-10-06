@@ -73,30 +73,32 @@ export async function purchaseSharesAction(_previous: ShareActionState, formData
 }
 
 // Records a withdrawal while leaving balance enforcement to the authoritative share service.
-export async function withdrawSharesAction(_previous: ShareActionState, formData: FormData): Promise<ShareActionState> {
-  const parsed = transactionSchema.extend({referenceId: z.uuid()}).safeParse(Object.fromEntries(formData));
+export async function withdrawSharesAction(referenceId: string, _previous: ShareActionState, formData: FormData): Promise<ShareActionState> {
+  const parsed = transactionSchema.omit({referenceId: true}).extend({
+    amount: transactionSchema.shape.amount.refine((value) => /[1-9]/.test(value), "Enter an amount greater than zero."),
+  }).safeParse(Object.fromEntries(formData));
   if (!parsed.success) return {ok: false, message: "Check the withdrawal details.", fieldErrors: parsed.error.flatten().fieldErrors};
   try {
     const originatorId = await currentUserId();
     if (!originatorId) return {ok: false, message: "Your session has expired."};
-    await withdrawShares({...parsed.data, amount: moneyFrom(parsed.data.amount), originatorId});
-    revalidatePath(`/dashboard/shares/${parsed.data.accountId}`);
+    await withdrawShares({...parsed.data, amount: moneyFrom(parsed.data.amount), referenceId, originatorId});
+    // The dialog refreshes the account after confirmation, preserving success feedback until then.
     return {ok: true, message: "Share withdrawal recorded."};
   } catch (error) {
-    if (error instanceof GoApiError && error.status === 409) return {ok: false, message: "This reference was already used with a different amount. Review the original transaction."};
+    if (error instanceof GoApiError && error.status === 409) return {ok: false, message: "This withdrawal was already recorded with a different amount. Review the original transaction."};
     return failure(error);
   }
 }
 
 // Creates an auditable adjustment request without pretending approval is available in this UI.
-export async function createAdjustmentAction(_previous: ShareActionState, formData: FormData): Promise<ShareActionState> {
-  const parsed = transactionSchema.extend({amount: z.string().trim().regex(/^-?\d+(\.\d{1,2})?$/, "Enter a valid amount.")}).safeParse(Object.fromEntries(formData));
+export async function createAdjustmentAction(referenceId: string, _previous: ShareActionState, formData: FormData): Promise<ShareActionState> {
+  const parsed = transactionSchema.omit({referenceId: true}).extend({amount: z.string().trim().regex(/^-?\d+(\.\d{1,2})?$/, "Enter a valid amount.")}).safeParse(Object.fromEntries(formData));
   if (!parsed.success) return {ok: false, message: "Check the adjustment details.", fieldErrors: parsed.error.flatten().fieldErrors};
   try {
     const originatorId = await currentUserId();
     if (!originatorId) return {ok: false, message: "Your session has expired."};
-    const result = await createShareAdjustment({...parsed.data, amount: moneyFrom(parsed.data.amount), originatorId});
-    return {ok: true, message: `Adjustment ${result.adjustmentId} was created for approval.`};
+    await createShareAdjustment({...parsed.data, amount: moneyFrom(parsed.data.amount), referenceId, originatorId});
+    return {ok: true, message: "Adjustment submitted for approval. The balance will change only after approval."};
   } catch (error) {
     return failure(error);
   }
