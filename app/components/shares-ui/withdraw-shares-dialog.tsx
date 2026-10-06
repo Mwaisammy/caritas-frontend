@@ -1,36 +1,126 @@
 "use client";
 
 import {useActionState, useRef, useState} from "react";
-import {ArrowUpFromLine, LoaderCircle, X} from "lucide-react";
+import {useRouter} from "next/navigation";
+import {LoaderCircle, ArrowUpFromLine} from "lucide-react";
+import CurrencyInput, {formatValue} from "react-currency-input-field";
 
-import {withdrawSharesAction, type ShareActionState} from "@/app/dashboard/shares/actions";
-import {ShareFeedback, ShareFieldError, shareInputClass, shareTextareaClass} from "./form-parts";
+import type {ShareActionState} from "@/app/dashboard/shares/actions";
+import {Alert, AlertDescription} from "@/components/ui/alert";
+import {Button} from "@/components/ui/button";
+import {Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger} from "@/components/ui/dialog";
+import {Field, FieldError, FieldGroup, FieldLabel} from "@/components/ui/field";
+import {Input} from "@/components/ui/input";
+import {Textarea} from "@/components/ui/textarea";
 
-// WithdrawSharesDialog confirms the amount and audit details before reducing a balance.
-export function WithdrawSharesDialog({accountId}: {accountId: string}) {
-  const dialog = useRef<HTMLDialogElement>(null);
-  const [values, setValues] = useState({amount: "", reason: ""});
-  // Keep the original request after an uncertain response so retrying cannot post twice.
+// WithdrawSharesDialog records a withdrawal while preserving uncertain requests for retry.
+export function WithdrawSharesDialog({accountId, submitAction}: {
+  accountId: string;
+  submitAction: (previous: ShareActionState, formData: FormData) => Promise<ShareActionState>;
+}) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [amount, setAmount] = useState("");
+  const [reason, setReason] = useState("");
+  const [showFeedback, setShowFeedback] = useState(false);
+  // Keep the exact payload after an uncertain response so retrying cannot post twice.
   const submission = useRef<FormData | null>(null);
   const [state, action, pending] = useActionState(async (previous: ShareActionState, data: FormData): Promise<ShareActionState> => {
-    if (!submission.current) {
-      data.set("referenceId", crypto.randomUUID());
-      submission.current = data;
-    }
+    submission.current ??= data;
     try {
-      const result = await withdrawSharesAction(previous, submission.current);
+      const result = await submitAction(previous, submission.current);
       if (result && !result.ok && previous?.ok === false && previous.retry) return {...result, retry: true};
       if (result?.ok || (result && !result.retry)) submission.current = null;
-      if (result?.ok) setValues({amount: "", reason: ""});
       return result;
     } catch {
-      return {ok: false, retry: true, message: "The response was lost. Retry to confirm this transaction."};
+      return {ok: false, retry: true, message: "The response was lost. Retry to confirm this withdrawal."};
     }
   }, null);
-  const retry = state?.ok === false && state.retry;
-  return <><button className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-800 hover:bg-stone-50" onClick={() => dialog.current?.showModal()} type="button"><ArrowUpFromLine className="size-4" />Withdraw</button>
-    <dialog className="m-auto w-[calc(100%-2rem)] max-w-lg rounded-2xl border-0 bg-white p-0 text-stone-950 shadow-2xl backdrop:bg-stone-950/35" ref={dialog}><div className="flex items-start justify-between border-b border-stone-200 p-5"><div><h2 className="text-lg font-semibold">Withdraw shares</h2><p className="mt-1 text-sm text-stone-500">The backend will validate the available balance.</p></div><button aria-label="Close" className="rounded-lg p-2 text-stone-500 hover:bg-stone-100" onClick={() => dialog.current?.close()} type="button"><X className="size-4" /></button></div>
-      <form action={action} className="space-y-4 p-5"><input name="accountId" type="hidden" value={accountId} /><label className="block text-sm font-medium">Amount (KES)<input className={`${shareInputClass} mt-1.5`} disabled={pending} inputMode="decimal" name="amount" value={values.amount} onChange={(event) => setValues({...values, amount: event.target.value})} readOnly={!!retry} placeholder="0.00" required /></label><ShareFieldError name="amount" state={state} /><label className="block text-sm font-medium">Reason<textarea className={`${shareTextareaClass} mt-1.5`} disabled={pending} name="reason" value={values.reason} onChange={(event) => setValues({...values, reason: event.target.value})} readOnly={!!retry} required /></label><ShareFieldError name="reason" state={state} /><ShareFeedback state={state} />{retry ? <p className="text-sm text-stone-600">Outcome not confirmed. Retry these same details before starting another transaction.</p> : null}
-        <div className="flex justify-end gap-2"><button className="h-10 rounded-lg border border-stone-200 px-4 text-sm font-semibold" onClick={() => dialog.current?.close()} type="button">Cancel</button><button className="inline-flex h-10 items-center gap-2 rounded-lg bg-stone-900 px-4 text-sm font-semibold text-white disabled:opacity-50" disabled={pending} type="submit">{pending ? <LoaderCircle className="size-4 animate-spin" /> : null}{retry ? "Retry withdrawal" : "Record withdrawal"}</button></div></form>
-    </dialog></>;
+  const retry = state?.ok === false && state.retry === true;
+  const errors = showFeedback && !pending && state && !state.ok ? state.fieldErrors : undefined;
+  const disabled = pending || state?.ok === true;
+
+  return (
+    <Dialog open={open} onOpenChange={(nextOpen) => {
+      if (pending) return;
+      setOpen(nextOpen);
+      setShowFeedback(retry);
+      // Refresh the balance and give the next withdrawal a fresh server-bound reference.
+      if (!nextOpen && state?.ok) router.refresh();
+    }}>
+      <DialogTrigger render={<Button variant="outline" disabled={state?.ok === true} />}>
+        <ArrowUpFromLine data-icon="inline-start" />Withdraw
+      </DialogTrigger>
+      <DialogContent showCloseButton={!pending}>
+        <DialogHeader>
+          <DialogTitle>Withdraw shares</DialogTitle>
+          <DialogDescription>
+            Enter the amount to withdraw and a reason. This will reduce the available share balance.
+          </DialogDescription>
+        </DialogHeader>
+        <form action={action} onSubmit={() => setShowFeedback(true)} className="flex flex-col gap-6">
+          <input name="accountId" type="hidden" value={accountId} />
+          <input name="amount" type="hidden" value={amount} />
+          <FieldGroup>
+            <Field data-invalid={Boolean(errors?.amount)} data-disabled={disabled}>
+              <FieldLabel htmlFor="withdrawal-amount">Amount (KES)</FieldLabel>
+              <CurrencyInput
+                id="withdrawal-amount"
+                customInput={Input}
+                value={amount}
+                onValueChange={(value) => setAmount(value ?? "")}
+                decimalsLimit={2}
+                allowNegativeValue={false}
+                disableAbbreviations
+                decimalSeparator="."
+                groupSeparator=","
+                inputMode="decimal"
+                prefix="KES "
+                placeholder="KES 0.00"
+                disabled={disabled}
+                readOnly={retry}
+                required
+                aria-invalid={Boolean(errors?.amount)}
+                aria-describedby={errors?.amount ? "withdrawal-amount-error" : undefined}
+              />
+              {errors?.amount && <FieldError id="withdrawal-amount-error">{errors.amount[0]}</FieldError>}
+            </Field>
+            <Field data-invalid={Boolean(errors?.reason)} data-disabled={disabled}>
+              <FieldLabel htmlFor="withdrawal-reason">Reason</FieldLabel>
+              <Textarea
+                id="withdrawal-reason"
+                name="reason"
+                placeholder="Explain why these shares are being withdrawn."
+                value={reason}
+                onChange={(event) => setReason(event.target.value)}
+                minLength={5}
+                maxLength={500}
+                disabled={disabled}
+                readOnly={retry}
+                required
+                aria-invalid={Boolean(errors?.reason)}
+                aria-describedby={errors?.reason ? "withdrawal-reason-error" : undefined}
+              />
+              {errors?.reason && <FieldError id="withdrawal-reason-error">{errors.reason[0]}</FieldError>}
+            </Field>
+          </FieldGroup>
+          {showFeedback && !pending && state && (
+            <Alert variant={state.ok ? "default" : "destructive"} role={state.ok ? "status" : "alert"}>
+              <AlertDescription>{state.message}</AlertDescription>
+            </Alert>
+          )}
+          {retry && <p className="text-sm text-muted-foreground">Outcome not confirmed. Retry these same details before starting another withdrawal.</p>}
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" disabled={pending} />}>
+              {state?.ok ? "Done" : "Cancel"}
+            </DialogClose>
+            <Button disabled={disabled} type="submit">
+              {pending && <LoaderCircle data-icon="inline-start" className="animate-spin" />}
+              {retry ? "Retry withdrawal" : amount ? `Withdraw ${formatValue({value: amount, prefix: "KES ", decimalScale: 2, groupSeparator: ",", decimalSeparator: "."})}` : "Withdraw shares"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
 }
