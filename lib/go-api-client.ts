@@ -100,8 +100,9 @@ export interface RegisterMemberResponse {
 }
 
 export type GetMemberRequest =
-  | { branchId: string; memberId: string; nationalId?: never }
-  | { branchId: string; nationalId: string; memberId?: never }
+  | { branchId: string; memberId: string; nationalId?: never; memberNumber?: never }
+  | { branchId: string; nationalId: string; memberId?: never; memberNumber?: never }
+  | { branchId: string; memberNumber: string; memberId?: never; nationalId?: never }
 
 export interface GetMemberResponse {
   member?: Member

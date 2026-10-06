@@ -44,7 +44,7 @@ export function buttonClass(variant: "primary" | "outline" | "ghost" | "icon" = 
 }
 
 export function relationshipLabel(value?: RelationshipType) {
-  if (!value) return "Not provided";
+  if (!value || value === "RELATIONSHIP_TYPE_UNSPECIFIED") return "—";
   return value.replace("RELATIONSHIP_TYPE_", "").toLowerCase().replaceAll("_", " ").replace(/^./, (letter) => letter.toUpperCase());
 }
 

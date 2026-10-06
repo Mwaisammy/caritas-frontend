@@ -43,15 +43,15 @@ export function ProfileFields({member, errors}: {member?: Member; errors?: Field
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Occupation" name="occupation" error={errors?.occupation}><input {...errorProps(errors, "occupation")} className={inputClass} defaultValue={employment?.occupation} id="occupation" name="occupation" required /></Field>
           <Field label="Employer" name="employer" error={errors?.employer}><input {...errorProps(errors, "employer")} className={inputClass} defaultValue={employment?.employer} id="employer" name="employer" required /></Field>
-          <Field label="Monthly income" name="monthlyIncome" error={errors?.monthlyIncome}><input {...errorProps(errors, "monthlyIncome")} className={inputClass} defaultValue={employment?.monthlyIncome?.units} id="monthlyIncome" inputMode="numeric" min="0" name="monthlyIncome" required type="number" /></Field>
-          <Field label="Currency" name="currencyCode" error={errors?.currencyCode}><input {...errorProps(errors, "currencyCode")} className={inputClass} defaultValue={employment?.monthlyIncome?.currencyCode ?? "KES"} id="currencyCode" maxLength={3} name="currencyCode" required /></Field>
+          <Field label="Monthly income" name="monthlyIncome" error={errors?.monthlyIncome}><input {...errorProps(errors, "monthlyIncome")} className={inputClass} defaultValue={employment?.monthlyIncome ? (Number(employment.monthlyIncome.units ?? "0") + (employment.monthlyIncome.nanos ?? 0) / 1_000_000_000).toFixed(2) : ""} id="monthlyIncome" inputMode="decimal" min="0" max="9999999999.99" step="0.01" name="monthlyIncome" required type="number" /></Field>
+          <Field label="Currency" name="currencyCode" error={errors?.currencyCode}><input {...errorProps(errors, "currencyCode")} className={inputClass} value="KES" readOnly id="currencyCode" name="currencyCode" required /></Field>
         </div>
       </section>
 
       <section className="border-t border-stone-200 pt-6">
         <SectionHeading title="Identification document" description="Government-issued supporting document." />
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Document type" name="idType" error={errors?.idType}><input {...errorProps(errors, "idType")} className={inputClass} defaultValue={identification?.type ?? "National ID"} id="idType" name="idType" required /></Field>
+          <Field label="Document type" name="idType" error={errors?.idType}><input {...errorProps(errors, "idType")} className={inputClass} defaultValue={identification?.type === "national_id" ? "National ID" : identification?.type ?? "National ID"} id="idType" name="idType" required /></Field>
           <Field label="Document number" name="idNumber" error={errors?.idNumber}><input {...errorProps(errors, "idNumber")} className={inputClass} defaultValue={identification?.number} id="idNumber" name="idNumber" required /></Field>
         </div>
       </section>
