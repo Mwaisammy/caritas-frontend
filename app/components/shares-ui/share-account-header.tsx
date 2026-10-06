@@ -23,13 +23,13 @@ export function ShareAccountHeader({ account }: { account: ShareAccount }) {
           <div className="mb-3">
             <ShareAccountBadge status={account.status} />
           </div>
-          <h1 className="break-all text-2xl font-bold tracking-tight sm:text-3xl">
+          <h1 className="break-all text-xl font-bold tracking-normal sm:text-xl">
             Share account
           </h1>
-          <p className="mt-2 break-all font-mono text-xs text-red-100 sm:text-sm">
-            {account.memberName} | {account.id}
+          <p className="mt-2 break-all font-mono text-2xl tracking-tight text-red-100 sm:text-3xl">
+            {account.memberName}
           </p>
-          <p className="mt-1 break-all text-sm text-red-50/85">
+          <p className="mt-1 break-all font-mono tracking-tight text-sm text-red-50/85">
             Member No: {account.memberNumber}
           </p>
         </div>

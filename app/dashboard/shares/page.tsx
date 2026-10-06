@@ -87,9 +87,15 @@ export default async function SharesPage({
     loadError: unknown;
   try {
     if (lookup) {
+      // console.log(
+      //   "Share account lookup request",
+      //   JSON.stringify({ branchId: SHARE_BRANCH_ID, [lookupBy]: lookup }),
+      // );
       const result = await getShareAccount({
         branchId: SHARE_BRANCH_ID,
-        [lookupBy]: lookup,
+        ...(lookupBy === "nationalId"
+          ? { nationalId: lookup }
+          : { memberNumber: Number(lookup) }),
       });
       accounts = result.account ? [result.account] : [];
     } else

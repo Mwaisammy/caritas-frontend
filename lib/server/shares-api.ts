@@ -8,7 +8,7 @@ export const openShareAccount = (input: {memberId: string; branchId: string}) =>
   goApiPost<{accountId: string; status: ShareAccountStatus}>("/api/v1/shares/open-account", input);
 
 // This wrapper supports internal account lookup plus the two identifiers administrators recognize.
-export const getShareAccount = (input: {branchId: string; accountId?: string; memberNumber?: string; nationalId?: string}) =>
+export const getShareAccount = (input: {branchId: string; accountId?: string; memberNumber?: number; nationalId?: string}) =>
   goApiPost<{account?: ShareAccount}>("/api/v1/shares/get-account", input);
 
 

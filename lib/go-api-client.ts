@@ -172,6 +172,50 @@ export interface ShareMoney {
   nanos: number
 }
 
+// CashierSessionStatus mirrors the custody transitions returned by contribution endpoints.
+export type CashierSessionStatus = "open" | "closed" | "handed_over" | "deposited"
+
+// CashierSession is the authoritative till state used when opening and closing cash custody.
+export interface CashierSession {
+  id: string
+  branchId: string
+  cashierId: string
+  status: CashierSessionStatus
+  expectedAmount?: ShareMoney
+  countedAmount?: ShareMoney
+  variance?: ShareMoney
+  varianceReason?: string
+  openedAt?: string
+  closedAt?: string
+  handedOverAt?: string
+  depositedAt?: string
+}
+
+// CashAllocationType intentionally excludes contribution types the backend cannot process yet.
+export type CashAllocationType =
+  | "CONTRIBUTION_ALLOCATION_TYPE_COM"
+  | "CONTRIBUTION_ALLOCATION_TYPE_LGOM"
+  | "CONTRIBUTION_ALLOCATION_TYPE_SHARE_PURCHASE"
+  | "CONTRIBUTION_ALLOCATION_TYPE_LOAN_PRINCIPAL"
+  | "CONTRIBUTION_ALLOCATION_TYPE_OTHER_CHARGE"
+
+// CashAllocationInput keeps each amount tied to its owning share or loan target when required.
+export interface CashAllocationInput {
+  type: CashAllocationType
+  targetId?: string
+  amount: ShareMoney
+}
+
+// CashContributionReceipt distinguishes completed posting from accepted cash awaiting review.
+export interface CashContributionReceipt {
+  id: string
+  internalReceiptReference: string
+  sessionId: string
+  status: "pending" | "processing" | "completed" | "failed" | "manual_review"
+  amount: ShareMoney
+  receivedAt?: string
+}
+
 // The status union keeps filters and badges aligned with the share service contract.
 export type ShareAccountStatus =
   | "SHARE_ACCOUNT_STATUS_UNSPECIFIED"

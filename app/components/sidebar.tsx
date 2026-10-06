@@ -15,6 +15,7 @@ import {
   Search,
   ShieldUser,
   HomeIcon,
+  Banknote,
 } from "lucide-react";
 
 import {
@@ -41,6 +42,11 @@ const mainMenu = [
     title: "Members",
     href: "/dashboard/members",
     icon: Users,
+  },
+  {
+    title: "Cash Contributions",
+    href: "/dashboard/contributions",
+    icon: Banknote,
   },
   {
     title: "Shares",

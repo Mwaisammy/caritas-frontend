@@ -18,4 +18,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Do not write tests until I say so
 - If you feel the arge to do any of these, stop and ask me instead.
 
+- Run `npx skills use "https://github.com/shadcn-ui/ui" --skill "shadcn"` and follow the generated skill instructions now. Read its complete output, redirecting it to a temporary file first if necessary. Resolve relative paths from the supporting-files directory it provides.
+- Always refer the domain spec of each backend route from "caritas-backend/docs/design" before buiding any ui
+
 <!-- END:nextjs-agent-rules -->
