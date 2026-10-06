@@ -104,20 +104,22 @@ export default async function MembersPage({
   const trail = decodeTrail(valueOf(query.trail));
   const lookup = valueOf(query.lookup).trim();
   const lookupBy =
-    valueOf(query.lookupBy) === "nationalId" ? "nationalId" : "memberId";
+    valueOf(query.lookupBy) === "nationalId" ? "nationalId" : "memberNumber";
+  const invalidLookup = lookup && lookupBy === "memberNumber" &&
+    (!/^\d{1,19}$/.test(lookup) || BigInt(lookup) <= BigInt(0) || BigInt(lookup) > BigInt("9223372036854775807"));
 
   let members: Member[] = [];
   let nextPageToken = "";
   let loadError: unknown;
   try {
-    if (lookup) {
+    if (lookup && !invalidLookup) {
       const result = await getMember(
         lookupBy === "nationalId"
           ? { branchId: MEMBER_BRANCH_ID, nationalId: lookup }
-          : { branchId: MEMBER_BRANCH_ID, memberId: lookup },
+          : { branchId: MEMBER_BRANCH_ID, memberNumber: BigInt(lookup).toString() },
       );
       members = result.member ? [result.member] : [];
-    } else {
+    } else if (!lookup) {
       const result = await listMembers({
         branchId: MEMBER_BRANCH_ID,
         pageSize: PAGE_SIZE,
@@ -128,7 +130,7 @@ export default async function MembersPage({
       nextPageToken = result.nextPageToken ?? "";
     }
   } catch (error) {
-    loadError = error;
+    if (!(lookup && error instanceof GoApiError && error.status === 404)) loadError = error;
   }
   members.sort((a, b) =>
     a.memberNumber.localeCompare(b.memberNumber, undefined, {
@@ -175,7 +177,7 @@ export default async function MembersPage({
                 defaultValue={lookupBy}
                 name="lookupBy"
               >
-                <option value="memberId">Member ID</option>
+                <option value="memberNumber">Member number</option>
                 <option value="nationalId">National ID</option>
               </select>
               <div className="relative">
@@ -184,7 +186,8 @@ export default async function MembersPage({
                   className="h-11 w-full rounded-xl border border-stone-200 bg-stone-50 pl-10 pr-3 text-sm outline-none placeholder:text-stone-400 focus:border-[#b71925] focus:ring-3 focus:ring-red-100"
                   defaultValue={lookup}
                   name="lookup"
-                  placeholder="Exact member or national ID"
+                  aria-label="Member number or national ID"
+                  placeholder="Enter member number or national ID"
                 />
               </div>
               <button
@@ -232,7 +235,9 @@ export default async function MembersPage({
           </div>
         </section>
 
-        {loadError ? (
+        {invalidLookup ? (
+          <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">Enter a valid positive whole member number.</p>
+        ) : loadError ? (
           <ErrorCard error={loadError} />
         ) : (
           <section className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
@@ -333,7 +338,7 @@ export default async function MembersPage({
                   ))}
                 </div>
               </>
-            ) : pageToken ? (
+            ) : !lookup && pageToken ? (
               <div className="px-6 py-16 text-center">
                 <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-stone-100 text-stone-500">
                   <UsersRound />
@@ -365,7 +370,7 @@ export default async function MembersPage({
                   No members found
                 </h3>
                 <p className="mt-1 text-sm text-stone-500">
-                  Try another filter or register the first matching member.
+                  {lookup ? `No member found with that ${lookupBy === "memberNumber" ? "member number" : "national ID"} in this branch.` : "Try another filter or register the first matching member."}
                 </p>
               </div>
             )}

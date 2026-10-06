@@ -14,6 +14,7 @@ import {
   UserRound,
 } from "lucide-react";
 
+import { OpenAccountDialog } from "@/app/components/shares-ui/open-account-dialog";
 import { GoApiError } from "@/lib/server/go-api";
 import { getMember, getMemberStatusHistory } from "@/lib/server/members-api";
 import { MEMBER_BRANCH_ID } from "../config";
@@ -42,8 +43,8 @@ function InfoItem({
       </div>
       <div className="min-w-0">
         <p className="text-xs font-medium text-stone-500">{label}</p>
-        <div className="mt-0.5 text-sm font-medium leading-5 text-stone-900">
-          {value || "—"}
+        <div className="mt-0.5 text-sm font-medium leading-5 text-stone-900 wrap-anywhere">
+          {value === "" || value == null ? "—" : value}
         </div>
       </div>
     </div>
@@ -158,9 +159,7 @@ export default async function MemberDetailsPage({
                   <InfoItem
                     icon={Mail}
                     label="Email"
-                    value={
-                      <span className="wrap-anywhere">{personal?.email}</span>
-                    }
+                    value={personal?.email}
                   />
                   <InfoItem
                     icon={CalendarDays}
@@ -170,16 +169,12 @@ export default async function MemberDetailsPage({
                   <InfoItem
                     icon={MapPin}
                     label="Address"
-                    value={
-                      <span className="wrap-anywhere">{personal?.address}</span>
-                    }
+                    value={personal?.address}
                   />
                   <InfoItem
                     icon={IdCard}
                     label="National ID"
-                    value={
-                      <span className="wrap-anywhere">{member.nationalId}</span>
-                    }
+                    value={member.nationalId}
                   />
                 </div>
               </section>
@@ -239,16 +234,12 @@ export default async function MemberDetailsPage({
                   <InfoItem
                     icon={IdCard}
                     label="Document type"
-                    value={identification?.type}
+                    value={identification?.type === "national_id" ? "National ID" : identification?.type}
                   />
                   <InfoItem
                     icon={IdCard}
                     label="Document number"
-                    value={
-                      <span className="wrap-anywhere">
-                        {identification?.number}
-                      </span>
-                    }
+                    value={identification?.number}
                   />
                 </div>
               </section>
@@ -369,9 +360,14 @@ export default async function MemberDetailsPage({
                 </div>
                 <div>
                   <p className="text-xs text-stone-500">Branch</p>
-                  <p className="mt-1 text-sm font-medium">Branch 01</p>
+                  <p className="mt-1 text-sm font-medium">{member.branchId ? `Branch ${member.branchId}` : "—"}</p>
                 </div>
               </div>
+            </section>
+            <section className="flex flex-col gap-3 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+              <h2 className="font-semibold text-stone-950">Member services</h2>
+              <OpenAccountDialog member={member} />
+              <Link className={buttonClass("outline")} href={`/dashboard/loans/new?memberId=${encodeURIComponent(member.id)}`}>Apply for loan</Link>
             </section>
             <MemberLifecycleForms member={member} />
           </aside>

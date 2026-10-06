@@ -44,8 +44,8 @@ const profileSchema = z.object({
   monthlyIncome: z
     .string()
     .trim()
-    .regex(/^\d+$/, "Monthly income must be a whole amount."),
-  currencyCode: z.string().trim().toUpperCase().length(3, "Use a 3-letter currency code."),
+    .regex(/^\d{1,10}(\.\d{1,2})?$/, "Enter an amount with up to 10 whole digits and 2 decimal places."),
+  currencyCode: z.literal("KES"),
   idType: z.string().trim().min(2, "Enter an identification type.").max(50),
   idNumber: z.string().trim().min(2, "Enter the identification number.").max(80),
   nextOfKinName: z.string().trim().min(2, "Enter the next of kin's name.").max(120),
@@ -91,8 +91,8 @@ function profileFrom(data: z.infer<typeof profileSchema>): MemberProfile {
       employer: data.employer,
       monthlyIncome: {
         currencyCode: data.currencyCode,
-        units: data.monthlyIncome,
-        nanos: 0,
+        units: data.monthlyIncome.split(".")[0],
+        nanos: Number((data.monthlyIncome.split(".")[1] ?? "").padEnd(9, "0")),
       },
     },
     idDocument: {type: data.idType, number: data.idNumber},

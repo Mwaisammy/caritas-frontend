@@ -6,6 +6,7 @@ import {z} from "zod";
 
 import {auth} from "@/lib/auth";
 import type {ShareMoney} from "@/lib/go-api-client";
+import {getMember} from "@/lib/server/members-api";
 import {GoApiError} from "@/lib/server/go-api";
 import {addGuarantor, applyForLoan, approveGuarantor, approveLoan, disburseLoan, rejectLoan, removeGuarantor} from "@/lib/server/loans-api";
 import {LOAN_BRANCH_ID} from "./config";
@@ -27,12 +28,18 @@ const decisionSchema = z.object({loanId: z.string().trim().min(1), reason: z.str
 export async function applyForLoanAction(_state: LoanActionState, formData: FormData): Promise<LoanActionState> {
   const parsed = applicationSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return {ok: false, message: "Check the application details.", fieldErrors: parsed.error.flatten().fieldErrors};
-  const guarantorIds = formData.getAll("guarantorId").map(String), amounts = formData.getAll("guaranteedAmount").map(String);
-  const guarantors = guarantorIds.map((guarantorId, index) => ({guarantorId: guarantorId.trim(), guaranteedAmount: amounts[index]?.trim() ?? ""}));
-  if (guarantors.some((item) => Boolean(item.guarantorId) !== Boolean(item.guaranteedAmount))) return {ok: false, message: "Each guarantor needs both a member ID and guaranteed amount."};
+  const nationalIds = formData.getAll("guarantorNationalId").map(String), amounts = formData.getAll("guaranteedAmount").map(String);
+  const guarantors = nationalIds.map((nationalId, index) => ({nationalId: nationalId.trim(), guaranteedAmount: amounts[index]?.trim() ?? ""}));
+  if (guarantors.some((item) => Boolean(item.nationalId) !== Boolean(item.guaranteedAmount))) return {ok: false, message: "Each guarantor needs both a national ID and guaranteed amount."};
   if (guarantors.some((item) => item.guaranteedAmount && !/^\d+(\.\d{1,2})?$/.test(item.guaranteedAmount))) return {ok: false, message: "Enter a valid guaranteed amount for every guarantor."};
   const officerId = await currentUserId(); if (!officerId) return {ok: false, message: "Your session has expired."};
-  try { const result = await applyForLoan({memberId: parsed.data.memberId, branchId: LOAN_BRANCH_ID, principal: parsed.data.principal, interestRate: parsed.data.interestRate, repaymentPeriodMonths: parsed.data.repaymentPeriodMonths, officerId, guarantors: guarantors.filter((item) => item.guarantorId), applicantSharePledgeAmount: moneyFrom(parsed.data.sharePledge)}); revalidatePath("/dashboard/loans"); return {ok: true, message: "Loan application submitted.", loanId: result.loanId}; } catch (error) { return failure(error); }
+  try {
+    const resolvedGuarantors = await Promise.all(guarantors.filter((item) => item.nationalId).map(async (item) => {
+      const {member} = await getMember({branchId: String(LOAN_BRANCH_ID), nationalId: item.nationalId});
+      if (!member) throw new Error("Guarantor member not found");
+      return {guarantorId: member.id, guaranteedAmount: item.guaranteedAmount};
+    }));
+    const result = await applyForLoan({memberId: parsed.data.memberId, branchId: LOAN_BRANCH_ID, principal: parsed.data.principal, interestRate: parsed.data.interestRate, repaymentPeriodMonths: parsed.data.repaymentPeriodMonths, officerId, guarantors: resolvedGuarantors, applicantSharePledgeAmount: moneyFrom(parsed.data.sharePledge)}); revalidatePath("/dashboard/loans"); return {ok: true, message: "Loan application submitted.", loanId: result.loanId}; } catch (error) { if (error instanceof GoApiError && error.status === 404) return {ok: false, message: "A guarantor was not found. Check each national ID."}; return failure(error); }
 }
 
 // approveLoanAction records the authenticated approver and refreshes the workspace.
