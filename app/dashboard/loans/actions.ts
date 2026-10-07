@@ -1,6 +1,6 @@
 "use server";
 
-import {revalidatePath} from "next/cache";
+import {revalidatePath, updateTag} from "next/cache";
 import {headers} from "next/headers";
 import {z} from "zod";
 
@@ -39,20 +39,20 @@ export async function applyForLoanAction(_state: LoanActionState, formData: Form
       if (!member) throw new Error("Guarantor member not found");
       return {guarantorId: member.id, guaranteedAmount: item.guaranteedAmount};
     }));
-    const result = await applyForLoan({memberId: parsed.data.memberId, branchId: LOAN_BRANCH_ID, principal: parsed.data.principal, interestRate: parsed.data.interestRate, repaymentPeriodMonths: parsed.data.repaymentPeriodMonths, officerId, guarantors: resolvedGuarantors, applicantSharePledgeAmount: moneyFrom(parsed.data.sharePledge)}); revalidatePath("/dashboard/loans"); return {ok: true, message: "Loan application submitted.", loanId: result.loanId}; } catch (error) { if (error instanceof GoApiError && error.status === 404) return {ok: false, message: "A guarantor was not found. Check each national ID."}; return failure(error); }
+    const result = await applyForLoan({memberId: parsed.data.memberId, branchId: LOAN_BRANCH_ID, principal: parsed.data.principal, interestRate: parsed.data.interestRate, repaymentPeriodMonths: parsed.data.repaymentPeriodMonths, officerId, guarantors: resolvedGuarantors, applicantSharePledgeAmount: moneyFrom(parsed.data.sharePledge)}); updateTag("loan-directory"); revalidatePath("/dashboard/loans"); return {ok: true, message: "Loan application submitted.", loanId: result.loanId}; } catch (error) { if (error instanceof GoApiError && error.status === 404) return {ok: false, message: "A guarantor was not found. Check each national ID."}; return failure(error); }
 }
 
 // approveLoanAction records the authenticated approver and refreshes the workspace.
-export async function approveLoanAction(_state: LoanActionState, formData: FormData): Promise<LoanActionState> { const parsed = decisionSchema.safeParse(Object.fromEntries(formData)); if (!parsed.success) return {ok: false, message: "Provide an approval reason.", fieldErrors: parsed.error.flatten().fieldErrors}; const officerId = await currentUserId(); if (!officerId) return {ok: false, message: "Your session has expired."}; try { await approveLoan({...parsed.data, officerId}); revalidatePath(`/dashboard/loans/${parsed.data.loanId}`); return {ok: true, message: "Loan approved."}; } catch (error) { return failure(error); } }
+export async function approveLoanAction(_state: LoanActionState, formData: FormData): Promise<LoanActionState> { const parsed = decisionSchema.safeParse(Object.fromEntries(formData)); if (!parsed.success) return {ok: false, message: "Provide an approval reason.", fieldErrors: parsed.error.flatten().fieldErrors}; const officerId = await currentUserId(); if (!officerId) return {ok: false, message: "Your session has expired."}; try { await approveLoan({...parsed.data, officerId}); updateTag("loan-directory"); revalidatePath(`/dashboard/loans/${parsed.data.loanId}`); return {ok: true, message: "Loan approved."}; } catch (error) { return failure(error); } }
 // rejectLoanAction records the reason required for a rejected application.
 export async function rejectLoanAction(_state: LoanActionState, formData: FormData): Promise<LoanActionState> { const parsed = decisionSchema.safeParse(Object.fromEntries(formData)); 
   if (!parsed.success) return {ok: false, message: "Provide a rejection reason.", fieldErrors: parsed.error.flatten().fieldErrors}; const loanOfficer = await currentUserId();
-   if (!loanOfficer) return {ok: false, message: "Your session has expired."}; try { await rejectLoan({...parsed.data, loanOfficer}); revalidatePath(`/dashboard/loans/${parsed.data.loanId}`); 
+   if (!loanOfficer) return {ok: false, message: "Your session has expired."}; try { await rejectLoan({...parsed.data, loanOfficer}); updateTag("loan-directory"); revalidatePath(`/dashboard/loans/${parsed.data.loanId}`);
    return {ok: true, message: "Loan rejected."}; } catch (error) { return failure(error); } }
 // disburseLoanAction records the authenticated officer before releasing approved funds.
 export async function disburseLoanAction(_state: LoanActionState, formData: FormData): Promise<LoanActionState> { const parsed = decisionSchema.safeParse(Object.fromEntries(formData)); 
   if (!parsed.success) return {ok: false, message: "Provide a disbursement reason.", fieldErrors: parsed.error.flatten().fieldErrors}; const loanOfficer = await currentUserId(); 
-  if (!loanOfficer) return {ok: false, message: "Your session has expired."}; try { await disburseLoan({...parsed.data, loanOfficer}); revalidatePath(`/dashboard/loans/${parsed.data.loanId}`); return {ok: true, message: "Loan disbursed."}; } catch (error) { return failure(error); } }
+  if (!loanOfficer) return {ok: false, message: "Your session has expired."}; try { await disburseLoan({...parsed.data, loanOfficer}); updateTag("loan-directory"); revalidatePath(`/dashboard/loans/${parsed.data.loanId}`); return {ok: true, message: "Loan disbursed."}; } catch (error) { return failure(error); } }
 
 // addGuarantorAction attaches a member and guaranteed amount to the current loan.
 export async function addGuarantorAction(_state: LoanActionState, formData: FormData): Promise<LoanActionState> { const parsed = z.object({loanId: z.string().min(1), guarantorId: z.string().trim().min(1), guaranteedAmount: z.string().trim().regex(/^\d+(\.\d{1,2})?$/)}).safeParse(Object.fromEntries(formData));

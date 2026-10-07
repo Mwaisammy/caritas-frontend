@@ -2,12 +2,13 @@
 
 import { z } from "zod"
 
-import type { CashAllocationInput, CashAllocationType, CashContributionReceipt, CashierSession, Loan, Member, ShareAccount, ShareMoney } from "@/lib/go-api-client"
+import type { CashAllocationInput, CashAllocationType, CashContributionReceipt, CashierSession, Loan, Member, RepaymentSchedule, ShareAccount, ShareMoney } from "@/lib/go-api-client"
 import { closeCashierSession, createCashContribution, openCashierSession } from "@/lib/server/contributions-api"
 import { GoApiError } from "@/lib/server/go-api"
 import { getLoan, listLoans } from "@/lib/server/loans-api"
 import { getMember } from "@/lib/server/members-api"
-import { getShareAccount } from "@/lib/server/shares-api"
+import { getRepaymentSchedule } from "@/lib/server/repayments-api"
+import { getShareAccount, getShareBalance } from "@/lib/server/shares-api"
 import { MEMBER_BRANCH_ID } from "@/app/dashboard/members/config"
 
 const moneySchema = z.string().trim().regex(/^(0|[1-9]\d{0,9})(\.\d{1,2})?$/, "Enter a valid KES amount.")
@@ -22,10 +23,13 @@ const allocationSchema = z.object({
 export type CashErrorState = {ok: false; message: string; retry?: boolean; fieldErrors?: Record<string, string[] | undefined>}
 
 // CashMutationState carries the authoritative receipt or till returned by a successful mutation.
-export type CashMutationState = null | CashErrorState | {ok: true; message: string; session?: CashierSession; receipt?: CashContributionReceipt}
+export type CashMutationState = null | CashErrorState | {ok: true; message: string; session?: CashierSession; receipt?: CashContributionReceipt; shareBalance?: ShareMoney}
 
-// CashMemberState contains only the member and payable targets required by the entry form.
-export type CashMemberState = null | CashErrorState | {ok: true; member: Member; shareAccount?: ShareAccount; loans: Loan[]}
+// CashLoanDetails keeps each payable loan beside its authoritative installment schedule.
+export type CashLoanDetails = {loan: Loan; schedule: RepaymentSchedule[]}
+
+// CashMemberState contains the member and authoritative reads required by the entry form.
+export type CashMemberState = null | CashErrorState | {ok: true; member: Member; shareAccount?: ShareAccount; shareBalance?: ShareMoney; loans: CashLoanDetails[]}
 
 // ValidatedAllocation names the checked JSON shape used during target ownership verification.
 type ValidatedAllocation = {type: CashAllocationType; targetId?: string; amount: string}
@@ -79,25 +83,34 @@ function failure(error: unknown): CashErrorState {
   return {ok: false, retry: true, message: "Something went wrong. Please try again."}
 }
 
-// findCashMemberAction verifies the member and loads only targets that can receive this cash.
+// findCashMemberAction verifies one exact identifier and loads the member's contribution position.
 export async function findCashMemberAction(_previous: CashMemberState, formData: FormData): Promise<CashMemberState> {
-  const parsed = z.object({nationalId: z.string().trim().min(3, "Enter a national ID.")}).safeParse(Object.fromEntries(formData))
-  if (!parsed.success) return {ok: false, message: "Check the national ID.", fieldErrors: parsed.error.flatten().fieldErrors}
+  const parsed = z.object({lookupBy: z.enum(["memberNumber", "nationalId"]), lookup: z.string().trim().min(1, "Enter a member number or national ID.")}).safeParse(Object.fromEntries(formData))
+  if (!parsed.success) return {ok: false, message: "Check the member search.", fieldErrors: parsed.error.flatten().fieldErrors}
+  if (parsed.data.lookupBy === "memberNumber" && !/^\d+$/.test(parsed.data.lookup)) return {ok: false, message: "Check the member number.", fieldErrors: {lookup: ["Enter a valid member number."]}}
   try {
-    const result = await getMember({branchId: MEMBER_BRANCH_ID, nationalId: parsed.data.nationalId})
-    if (!result.member) return {ok: false, message: "No member matched that national ID."}
+    const identifier = parsed.data.lookupBy === "memberNumber"
+      ? {branchId: MEMBER_BRANCH_ID, memberNumber: parsed.data.lookup} as const
+      : {branchId: MEMBER_BRANCH_ID, nationalId: parsed.data.lookup} as const
+    const result = await getMember(identifier)
+    if (!result.member) return {ok: false, message: "No member matched that identifier."}
     if (result.member.status !== "MEMBER_STATUS_ACTIVE") return {ok: false, message: "Cash contributions can only be recorded for active members."}
     const [shares, loans] = await Promise.all([
-      getShareAccount({branchId: MEMBER_BRANCH_ID, nationalId: parsed.data.nationalId}).catch((error) => {
+      getShareAccount({branchId: MEMBER_BRANCH_ID, nationalId: result.member.nationalId}).catch((error) => {
         if (error instanceof GoApiError && error.status === 404) return {account: undefined}
         throw error
       }),
       listLoans({memberId: result.member.id, pageSize: 50}),
     ])
     const payable = (loans.loans ?? []).filter((loan) => ["LOAN_STATUS_DISBURSED", "LOAN_STATUS_ACTIVE", "LOAN_STATUS_DELINQUENT"].includes(loan.status))
-    return {ok: true, member: result.member, shareAccount: shares.account?.status === "SHARE_ACCOUNT_STATUS_ACTIVE" ? shares.account : undefined, loans: payable}
+    const shareAccount = shares.account?.status === "SHARE_ACCOUNT_STATUS_ACTIVE" ? shares.account : undefined
+    const [shareBalance, loanDetails] = await Promise.all([
+      shareAccount ? getShareBalance({accountId: shareAccount.id, consistencyStrong: true}).then((response) => response.balance) : undefined,
+      Promise.all(payable.map(async (loan) => ({loan, schedule: (await getRepaymentSchedule({loanId: loan.id})).schedule ?? []}))),
+    ])
+    return {ok: true, member: result.member, shareAccount, shareBalance, loans: loanDetails}
   } catch (error) {
-    if (error instanceof GoApiError && error.status === 404) return {ok: false, message: "No member matched that national ID."}
+    if (error instanceof GoApiError && error.status === 404) return {ok: false, message: "No member matched that identifier."}
     return failure(error)
   }
 }
@@ -127,7 +140,12 @@ export async function recordCashContributionAction(_previous: CashMutationState,
     const result = await createCashContribution({...form.data, contributionPeriod: `${form.data.contributionPeriod}-01`, amount: {currencyCode: "KES", units: String(Math.floor(total / 100)), nanos: total % 100 * 10_000_000}, allocations: input})
     if (!result.receipt) return {ok: false, message: "The backend returned no cash receipt."}
     const messages = {completed: "Cash received and allocations completed.", manual_review: "Cash was received, but its allocations require manual review."}
-    return {ok: true, receipt: result.receipt, message: messages[result.receipt.status as keyof typeof messages] ?? `Cash receipt returned with status ${result.receipt.status}.`}
+    let shareBalance: ShareMoney | undefined
+    if (result.receipt.status === "completed") {
+      const account = await getShareAccount({branchId: MEMBER_BRANCH_ID, nationalId: member.member.nationalId}).catch(() => ({account: undefined}))
+      if (account.account?.status === "SHARE_ACCOUNT_STATUS_ACTIVE") shareBalance = await getShareBalance({accountId: account.account.id, consistencyStrong: true}).then((response) => response.balance).catch(() => undefined)
+    }
+    return {ok: true, receipt: result.receipt, shareBalance, message: messages[result.receipt.status as keyof typeof messages] ?? `Cash receipt returned with status ${result.receipt.status}.`}
   } catch (error) {
     return failure(error)
   }

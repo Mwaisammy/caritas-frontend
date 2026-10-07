@@ -1,6 +1,6 @@
 "use server";
 
-import {revalidatePath} from "next/cache";
+import {revalidatePath, updateTag} from "next/cache";
 import {headers} from "next/headers";
 import {z} from "zod";
 
@@ -14,6 +14,6 @@ export async function recordRepaymentAction(_state: LoanActionState, formData: F
   const parsed = z.object({loanId: z.string().min(1), amount: z.string().trim().regex(/^\d+(\.\d{1,2})?$/), paymentGatewayTransactionId: z.string().trim().min(2)}).safeParse(Object.fromEntries(formData));
   if (!parsed.success) return {ok: false, message: "Check the repayment details.", fieldErrors: parsed.error.flatten().fieldErrors};
   const session = await auth.api.getSession({headers: await headers()}); if (!session?.user.id) return {ok: false, message: "Your session has expired."};
-  try { await recordRepayment({...parsed.data, createdBy: session.user.id}); revalidatePath(`/dashboard/loans/${parsed.data.loanId}`); return {ok: true, message: "Repayment recorded."}; }
+  try { await recordRepayment({...parsed.data, createdBy: session.user.id}); updateTag("loan-directory"); revalidatePath(`/dashboard/loans/${parsed.data.loanId}`); return {ok: true, message: "Repayment recorded."}; }
   catch (error) { if (error instanceof GoApiError) return {ok: false, message: `The repayment was not recorded. Reference: ${error.requestId}`}; console.error("Unexpected repayment failure", error); return {ok: false, message: "Something went wrong. Please try again."}; }
 }

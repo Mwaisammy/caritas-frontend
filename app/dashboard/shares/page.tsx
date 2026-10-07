@@ -1,4 +1,5 @@
 import Link from "next/link";
+import {cacheLife, cacheTag} from "next/cache";
 
 import { ShareAccountList } from "@/app/components/shares-ui/share-account-list";
 import { ShareDirectoryHeader } from "@/app/components/shares-ui/share-directory-header";
@@ -12,6 +13,39 @@ const statuses: ShareAccountStatus[] = [
   "SHARE_ACCOUNT_STATUS_DORMANT",
   "SHARE_ACCOUNT_STATUS_CLOSED",
 ];
+
+// loadShareDirectory privately caches only this user's short-lived directory reads.
+async function loadShareDirectory(
+  lookup: string,
+  lookupBy: "memberNumber" | "nationalId",
+  pageToken: string,
+  status: ShareAccountStatus | "",
+) {
+  "use cache: private";
+  cacheLife({stale: 30, revalidate: 60, expire: 300});
+  cacheTag("share-directory");
+
+  if (lookup) {
+    const result = await getShareAccount({
+      branchId: SHARE_BRANCH_ID,
+      ...(lookupBy === "nationalId"
+        ? {nationalId: lookup}
+        : {memberNumber: Number(lookup)}),
+    });
+    return {accounts: result.account ? [result.account] : [], nextPageToken: ""};
+  }
+
+  const result = await listShareAccounts({
+    branchId: SHARE_BRANCH_ID,
+    pageSize: SHARE_PAGE_SIZE,
+    ...(pageToken ? {pageToken} : {}),
+    ...(status ? {statusFilter: status} : {}),
+  });
+  return {
+    accounts: result.accounts ?? [],
+    nextPageToken: result.nextPageToken ?? "",
+  };
+}
 
 // decodeTrail rejects malformed browser input so cursor history cannot break directory rendering.
 function decodeTrail(value: string) {
@@ -86,25 +120,12 @@ export default async function SharesPage({
     nextPageToken = "",
     loadError: unknown;
   try {
-    if (lookup) {
-      // console.log(
-      //   "Share account lookup request",
-      //   JSON.stringify({ branchId: SHARE_BRANCH_ID, [lookupBy]: lookup }),
-      // );
-      const result = await getShareAccount({
-        branchId: SHARE_BRANCH_ID,
-        ...(lookupBy === "nationalId"
-          ? { nationalId: lookup }
-          : { memberNumber: Number(lookup) }),
-      });
-      accounts = result.account ? [result.account] : [];
-    } else
-      ({ accounts = [], nextPageToken = "" } = await listShareAccounts({
-        branchId: SHARE_BRANCH_ID,
-        pageSize: SHARE_PAGE_SIZE,
-        ...(pageToken && { pageToken }),
-        ...(status && { statusFilter: status }),
-      }));
+    ({accounts, nextPageToken} = await loadShareDirectory(
+      lookup,
+      lookupBy,
+      pageToken,
+      status,
+    ));
   } catch (error) {
     if (!(lookup && error instanceof GoApiError && error.status === 404))
       loadError = error;

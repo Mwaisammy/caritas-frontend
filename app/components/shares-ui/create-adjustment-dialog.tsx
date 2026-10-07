@@ -3,8 +3,6 @@
 import {useActionState, useState} from "react";
 import {useRouter} from "next/navigation";
 import {LoaderCircle, Minus, Plus, SlidersHorizontal} from "lucide-react";
-import CurrencyInput, {formatValue} from "react-currency-input-field";
-
 import type {ShareActionState} from "@/app/dashboard/shares/actions";
 import {Alert, AlertDescription} from "@/components/ui/alert";
 import {Button} from "@/components/ui/button";
@@ -24,7 +22,7 @@ export function CreateAdjustmentDialog({accountId, submitAction}: {
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
   const [direction, setDirection] = useState("add");
-  const formattedAmount = formatValue({value: amount || "0", prefix: "KES ", decimalScale: 2, groupSeparator: ",", decimalSeparator: "."});
+  const formattedAmount = new Intl.NumberFormat("en-KE", {style: "currency", currency: "KES", minimumFractionDigits: 2, maximumFractionDigits: 2}).format(Number(amount || 0));
   const [reason, setReason] = useState("");
   const [showFeedback, setShowFeedback] = useState(false);
   const [state, action, pending] = useActionState(submitAction, null);
@@ -82,19 +80,15 @@ export function CreateAdjustmentDialog({accountId, submitAction}: {
             </Field>
             <Field data-invalid={Boolean(errors?.amount)} data-disabled={disabled}>
               <FieldLabel htmlFor="adjustment-amount">Amount (KES)</FieldLabel>
-              <CurrencyInput
+              <Input
                 id="adjustment-amount"
-                customInput={Input}
+                type="number"
                 value={amount}
-                onValueChange={(value) => setAmount(value ?? "")}
-                decimalsLimit={2}
-                allowNegativeValue={false}
-                disableAbbreviations
-                decimalSeparator="."
-                groupSeparator=","
+                onChange={(event) => setAmount(event.target.value)}
+                min="0"
+                step="0.01"
                 inputMode="decimal"
-                prefix="KES "
-                placeholder="KES 0.00"
+                placeholder="0.00"
                 disabled={disabled}
                 required
                 aria-invalid={Boolean(errors?.amount)}

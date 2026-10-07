@@ -1,6 +1,6 @@
 "use server";
 
-import {revalidatePath} from "next/cache";
+import {revalidatePath, updateTag} from "next/cache";
 import {headers} from "next/headers";
 import {z} from "zod";
 
@@ -49,6 +49,7 @@ export async function openShareAccountAction(_previous: ShareActionState, formDa
   if (!parsed.success) return {ok: false, message: "Check the member ID.", fieldErrors: parsed.error.flatten().fieldErrors};
   try {
     const result = await openShareAccount({memberId: parsed.data.memberId, branchId: SHARE_BRANCH_ID});
+    updateTag("share-directory");
     revalidatePath("/dashboard/shares");
     return {ok: true, message: "Share account opened successfully.", accountId: result.accountId};
   } catch (error) {
@@ -64,6 +65,7 @@ export async function purchaseSharesAction(_previous: ShareActionState, formData
     const originatorId = await currentUserId();
     if (!originatorId) return {ok: false, message: "Your session has expired."};
     await purchaseShares({...parsed.data, amount: moneyFrom(parsed.data.amount), originatorId});
+    updateTag("share-directory");
     revalidatePath(`/dashboard/shares/${parsed.data.accountId}`);
     return {ok: true, message: "Share purchase recorded."};
   } catch (error) {
@@ -82,6 +84,7 @@ export async function withdrawSharesAction(referenceId: string, _previous: Share
     const originatorId = await currentUserId();
     if (!originatorId) return {ok: false, message: "Your session has expired."};
     await withdrawShares({...parsed.data, amount: moneyFrom(parsed.data.amount), referenceId, originatorId});
+    updateTag("share-directory");
     // The dialog refreshes the account after confirmation, preserving success feedback until then.
     return {ok: true, message: "Share withdrawal recorded."};
   } catch (error) {
@@ -98,6 +101,7 @@ export async function createAdjustmentAction(referenceId: string, _previous: Sha
     const originatorId = await currentUserId();
     if (!originatorId) return {ok: false, message: "Your session has expired."};
     await createShareAdjustment({...parsed.data, amount: moneyFrom(parsed.data.amount), referenceId, originatorId});
+    updateTag("share-directory");
     return {ok: true, message: "Adjustment submitted for approval. The balance will change only after approval."};
   } catch (error) {
     return failure(error);
@@ -110,6 +114,7 @@ export async function reverseTransactionAction(_previous: ShareActionState, form
   if (!parsed.success) return {ok: false, message: "Check the reversal details.", fieldErrors: parsed.error.flatten().fieldErrors};
   try {
     await reverseShareTransaction({transactionId: parsed.data.transactionId, referenceId: parsed.data.referenceId, reason: parsed.data.reason});
+    updateTag("share-directory");
     revalidatePath(`/dashboard/shares/${parsed.data.accountId}`);
     return {ok: true, message: "Transaction reversed."};
   } catch (error) {

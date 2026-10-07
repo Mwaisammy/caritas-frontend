@@ -3,6 +3,7 @@ import "server-only";
 import type { Loan } from "../../app/types/loans";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import {cacheLife, cacheTag} from "next/cache";
 
 const API_URL = process.env.CARITAS_BACKEND_URL;
 
@@ -12,6 +13,10 @@ export interface ListLoansResponse {
 }
 
 export async function getLoans(): Promise<ListLoansResponse> {
+  "use cache: private";
+  cacheLife({stale: 30, revalidate: 60, expire: 300});
+  cacheTag("loan-directory");
+
   if (!API_URL) {
     throw new Error("CARITAS_BACKEND_URL is not configured");
   }
@@ -26,11 +31,6 @@ export async function getLoans(): Promise<ListLoansResponse> {
     throw new Error("You must be signed in to fetch loans");
   }
 
-  console.log("Authenticated user:", {
-    id: session.user.id,
-    email: session.user.email,
-  });
-
   const { token } = await auth.api.getToken({
     headers: requestHeaders,
   });
@@ -40,8 +40,7 @@ export async function getLoans(): Promise<ListLoansResponse> {
   }
 
   const response = await fetch(
-    `${API_URL}/api/v1/loans/list
-  `,
+    `${API_URL}/api/v1/loans/list`,
     {
       method: "POST",
       cache: "no-store",
@@ -57,11 +56,7 @@ export async function getLoans(): Promise<ListLoansResponse> {
 
   const body: unknown = await response.json().catch(() => null);
 
-  console.log("Loans response:", response.status);
-
   if (!response.ok) {
-    console.error("Backend error:", body);
-
     const backendMessage =
       body &&
       typeof body === "object" &&

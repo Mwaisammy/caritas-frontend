@@ -1,6 +1,6 @@
 "use server";
 
-import {revalidatePath} from "next/cache";
+import {revalidatePath, updateTag} from "next/cache";
 import {z} from "zod";
 
 import type {
@@ -172,6 +172,7 @@ export async function registerMemberAction(
       nationalId,
       profile: profileFrom(profileData),
     });
+    updateTag("member-directory");
     revalidatePath("/dashboard/members");
     return {ok: true, data: {
       message: `Member ${result.memberNumber} was registered successfully.`,
@@ -201,6 +202,7 @@ export async function updateMemberProfileAction(
   try {
     const {memberId, ...profileData} = parsed.data;
     await updateMemberProfile({memberId, profile: profileFrom(profileData)});
+    updateTag("member-directory");
     revalidatePath(`/dashboard/members/${memberId}`);
     revalidatePath("/dashboard/members");
     return {ok: true, data: {message: "Member profile updated."}};
@@ -229,6 +231,7 @@ export async function updateMemberStatusAction(
 
   try {
     await updateMemberStatus(parsed.data);
+    updateTag("member-directory");
     revalidatePath(`/dashboard/members/${parsed.data.memberId}`);
     revalidatePath("/dashboard/members");
     return {ok: true, data: {message: "Member status updated."}};
@@ -258,6 +261,7 @@ export async function closeMemberAction(
   try {
     const result = await closeMember({memberId: parsed.data.memberId, reason: parsed.data.reason});
     if (!result.success) return {ok: false, error: {message: "The backend did not confirm account closure."}};
+    updateTag("member-directory");
     revalidatePath(`/dashboard/members/${parsed.data.memberId}`);
     revalidatePath("/dashboard/members");
     return {ok: true, data: {message: "Member account closed."}};

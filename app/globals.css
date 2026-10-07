@@ -17,6 +17,32 @@
   animation: authPageEnter 0.3s ease-out;
 }
 
+@keyframes routeLoadingStripe {
+  0% {
+    transform: translateX(-110%) scaleX(0.35);
+  }
+  55% {
+    transform: translateX(65%) scaleX(0.75);
+  }
+  100% {
+    transform: translateX(190%) scaleX(0.45);
+  }
+}
+
+.route-loading-stripe {
+  animation: routeLoadingStripe 1.15s ease-in-out infinite;
+  transform-origin: left;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-loading-stripe {
+    width: 100%;
+    animation: none;
+    opacity: 0.75;
+  }
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -138,5 +164,23 @@
   }
   body {
     @apply bg-background text-foreground font-sans;
+  }
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .cash-receipt,
+  .cash-receipt * {
+    visibility: visible;
+  }
+
+  .cash-receipt {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    box-shadow: none;
   }
 }
