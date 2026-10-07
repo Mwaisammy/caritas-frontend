@@ -50,6 +50,7 @@ export function ShareAccountList({
                       <Link
                         className="grid grid-cols-[minmax(10rem,1.25fr)_minmax(10rem,1fr)_minmax(7rem,.7fr)_minmax(8rem,.8fr)_minmax(8rem,.8fr)_2.5rem] items-center px-6 py-4"
                         href={`/dashboard/shares/${account.id}`}
+                        prefetch={false}
                       >
                         <span className="min-w-0 wrap-break-word font-semibold text-stone-900">
                           {account.memberNumber || "Not available"}
@@ -80,6 +81,7 @@ export function ShareAccountList({
                 className="flex items-center gap-3 p-5 hover:bg-red-50/45"
                 href={`/dashboard/shares/${account.id}`}
                 key={account.id}
+                prefetch={false}
               >
                 <div className="min-w-0 flex-1">
                   <div className="mb-2 flex items-center justify-between gap-3">

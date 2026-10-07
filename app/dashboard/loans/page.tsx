@@ -7,8 +7,6 @@ import { getLoans } from "@/lib/api/loans";
 export default async function LoansPage() {
   const loanData = await getLoans();
 
-  console.log("Loans page data", loanData);
-
   return (
     <div className="min-h-screen  text-gray-900">
       <main className="">

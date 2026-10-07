@@ -1,4 +1,5 @@
 import Link from "next/link";
+import {cacheLife, cacheTag} from "next/cache";
 import {
   ArrowLeft,
   ArrowRight,
@@ -24,6 +25,38 @@ const statuses: Array<{ value: "" | MemberStatus; label: string }> = [
   { value: "MEMBER_STATUS_CLOSED", label: "Closed" },
   { value: "MEMBER_STATUS_REJECTED", label: "Rejected" },
 ];
+
+// loadMemberDirectory privately caches only this user's short-lived directory reads.
+async function loadMemberDirectory(
+  lookup: string,
+  lookupBy: "memberNumber" | "nationalId",
+  pageToken: string,
+  status: MemberStatus | "",
+) {
+  "use cache: private";
+  cacheLife({stale: 30, revalidate: 60, expire: 300});
+  cacheTag("member-directory");
+
+  if (lookup) {
+    const result = await getMember(
+      lookupBy === "nationalId"
+        ? {branchId: MEMBER_BRANCH_ID, nationalId: lookup}
+        : {branchId: MEMBER_BRANCH_ID, memberNumber: BigInt(lookup).toString()},
+    );
+    return {members: result.member ? [result.member] : [], nextPageToken: ""};
+  }
+
+  const result = await listMembers({
+    branchId: MEMBER_BRANCH_ID,
+    pageSize: PAGE_SIZE,
+    ...(pageToken ? {pageToken} : {}),
+    ...(status ? {statusFilter: status} : {}),
+  });
+  return {
+    members: result.members ?? [],
+    nextPageToken: result.nextPageToken ?? "",
+  };
+}
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 const valueOf = (value: string | string[] | undefined) =>
@@ -112,22 +145,13 @@ export default async function MembersPage({
   let nextPageToken = "";
   let loadError: unknown;
   try {
-    if (lookup && !invalidLookup) {
-      const result = await getMember(
-        lookupBy === "nationalId"
-          ? { branchId: MEMBER_BRANCH_ID, nationalId: lookup }
-          : { branchId: MEMBER_BRANCH_ID, memberNumber: BigInt(lookup).toString() },
-      );
-      members = result.member ? [result.member] : [];
-    } else if (!lookup) {
-      const result = await listMembers({
-        branchId: MEMBER_BRANCH_ID,
-        pageSize: PAGE_SIZE,
-        ...(pageToken ? { pageToken } : {}),
-        ...(validStatus ? { statusFilter: validStatus } : {}),
-      });
-      members = result.members ?? [];
-      nextPageToken = result.nextPageToken ?? "";
+    if (!invalidLookup) {
+      ({members, nextPageToken} = await loadMemberDirectory(
+        lookup,
+        lookupBy,
+        pageToken,
+        validStatus,
+      ));
     }
   } catch (error) {
     if (!(lookup && error instanceof GoApiError && error.status === 404)) loadError = error;
@@ -286,6 +310,7 @@ export default async function MembersPage({
                                   aria-label={`View ${member.profile?.personal?.fullName ?? "member"}`}
                                   className="font-semibold text-stone-900 outline-none after:absolute after:inset-0 focus-visible:underline"
                                   href={`/dashboard/members/${encodeURIComponent(member.id)}`}
+                                  prefetch={false}
                                 >
                                   {member.profile?.personal?.fullName ??
                                     "Unnamed member"}
@@ -318,6 +343,7 @@ export default async function MembersPage({
                       className="flex items-center gap-3 p-4 hover:bg-red-50/30"
                       href={`/dashboard/members/${encodeURIComponent(member.id)}`}
                       key={member.id}
+                      prefetch={false}
                     >
                       <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-red-50 text-xs font-bold text-[#b71925]">
                         {initials(member.profile?.personal?.fullName)}

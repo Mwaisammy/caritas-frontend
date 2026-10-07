@@ -2,6 +2,7 @@ import "server-only";
 
 import {randomUUID} from "node:crypto";
 import {headers} from "next/headers";
+import {cache} from "react";
 
 import {auth} from "@/lib/auth";
 import type {
@@ -25,27 +26,32 @@ export class GoApiError extends Error {
   }
 }
 
-async function getAuthorization(requestId: string) {
+// getAuthorization avoids repeating session and token work during one server render.
+const getAuthorization = cache(async () => {
   const requestHeaders = await headers();
   const session = await auth.api.getSession({headers: requestHeaders});
 
   if (!session) {
-    throw new GoApiError(401, requestId);
+    return undefined;
   }
 
   const result = await auth.api.getToken({headers: requestHeaders});
   const token = result.token?.trim();
 
   if (!token) {
-    throw new GoApiError(401, requestId);
+    return undefined;
   }
 
   return `Bearer ${token}`;
-}
+});
 
 export async function goApiPost<T>(path: string, body: unknown): Promise<T> {
   const requestId = randomUUID();
-  const authorization = await getAuthorization(requestId);
+  const authorization = await getAuthorization();
+
+  if (!authorization) {
+    throw new GoApiError(401, requestId);
+  }
   let response: Response;
 
   try {
