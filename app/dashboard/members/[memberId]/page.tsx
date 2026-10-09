@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import {notFound} from "next/navigation";
 import {
   ArrowLeft,
   BriefcaseBusiness,
@@ -14,11 +14,11 @@ import {
   UserRound,
 } from "lucide-react";
 
-import { OpenAccountDialog } from "@/app/components/shares-ui/open-account-dialog";
-import { GoApiError } from "@/lib/server/go-api";
-import { getMember, getMemberStatusHistory } from "@/lib/server/members-api";
-import { MEMBER_BRANCH_ID } from "../config";
-import { EditMemberSidebar, MemberLifecycleForms } from "../member-forms";
+import {OpenAccountDialog} from "@/app/components/shares-ui/open-account-dialog";
+import {GoApiError} from "@/lib/server/go-api";
+import {getMember, getMemberStatusHistory} from "@/lib/server/members-api";
+import {MEMBER_BRANCH_ID} from "../config";
+import {EditMemberSidebar, MemberLifecycleForms} from "../member-forms";
 import {
   buttonClass,
   formatDate,
@@ -26,13 +26,16 @@ import {
   MemberStatusBadge,
   relationshipLabel,
 } from "../member-ui";
+import {getShareAccount} from "@/lib/server/shares-api";
+import { getLoan, getLoanStatus } from "@/lib/server/loans-api";
+import { getLoans } from "@/lib/api/loans";
 
 function InfoItem({
   icon: Icon,
   label,
   value,
 }: {
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<{className?: string}>;
   label: string;
   value?: React.ReactNode;
 }) {
@@ -63,18 +66,18 @@ export default async function MemberDetailsPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ memberId: string }>;
-  searchParams: Promise<{ historyToken?: string }>;
+  params: Promise<{memberId: string}>;
+  searchParams: Promise<{historyToken?: string}>;
 }) {
-  const [{ memberId }, query] = await Promise.all([params, searchParams]);
+  const [{memberId}, query] = await Promise.all([params, searchParams]);
   const historyToken =
     typeof query.historyToken === "string" ? query.historyToken : "";
   const [memberResult, historyResult] = await Promise.allSettled([
-    getMember({ branchId: MEMBER_BRANCH_ID, memberId }),
+    getMember({branchId: MEMBER_BRANCH_ID, memberId}),
     getMemberStatusHistory({
       memberId,
       pageSize: 20,
-      ...(historyToken ? { pageToken: historyToken } : {}),
+      ...(historyToken ? {pageToken: historyToken} : {}),
     }),
   ]);
 
@@ -87,15 +90,21 @@ export default async function MemberDetailsPage({
     throw memberResult.reason;
   }
   const member = memberResult.value.member;
+
   if (!member) notFound();
   const history =
     historyResult.status === "fulfilled"
       ? historyResult.value
-      : { transitions: [], nextPageToken: "" };
+      : {transitions: [], nextPageToken: ""};
   const personal = member.profile?.personal;
   const employment = member.profile?.employment;
   const identification = member.profile?.idDocument;
   const nextOfKin = member.profile?.nextOfKin;
+
+  const shareAccount = await getShareAccount({
+    branchId: MEMBER_BRANCH_ID,
+    nationalId: member?.nationalId,
+  });
 
   return (
     <div className="min-h-full bg-[#faf9f7] px-4 pb-14 sm:px-7 lg:px-9">
@@ -156,11 +165,7 @@ export default async function MemberDetailsPage({
                     label="Phone"
                     value={personal?.phone}
                   />
-                  <InfoItem
-                    icon={Mail}
-                    label="Email"
-                    value={personal?.email}
-                  />
+                  <InfoItem icon={Mail} label="Email" value={personal?.email} />
                   <InfoItem
                     icon={CalendarDays}
                     label="Date of birth"
@@ -234,7 +239,11 @@ export default async function MemberDetailsPage({
                   <InfoItem
                     icon={IdCard}
                     label="Document type"
-                    value={identification?.type === "national_id" ? "National ID" : identification?.type}
+                    value={
+                      identification?.type === "national_id"
+                        ? "National ID"
+                        : identification?.type
+                    }
                   />
                   <InfoItem
                     icon={IdCard}
@@ -360,14 +369,27 @@ export default async function MemberDetailsPage({
                 </div>
                 <div>
                   <p className="text-xs text-stone-500">Branch</p>
-                  <p className="mt-1 text-sm font-medium">{member.branchId ? `Branch ${member.branchId}` : "—"}</p>
+                  <p className="mt-1 text-sm font-medium">
+                    {member.branchId ? `Branch ${member.branchId}` : "—"}
+                  </p>
                 </div>
               </div>
             </section>
             <section className="flex flex-col gap-3 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
               <h2 className="font-semibold text-stone-950">Member services</h2>
-              <OpenAccountDialog member={member} />
-              <Link className={buttonClass("outline")} href={`/dashboard/loans/new?memberId=${encodeURIComponent(member.id)}`}>Apply for loan</Link>
+
+              {shareAccount.account?.id ? null : (
+                <>
+                  <OpenAccountDialog member={member} />
+                </>
+              )}
+
+              <Link
+                className={buttonClass("outline")}
+                href={`/dashboard/loans/new?memberId=${encodeURIComponent(member.id)}`}
+              >
+                Apply for loan
+              </Link>
             </section>
             <MemberLifecycleForms member={member} />
           </aside>

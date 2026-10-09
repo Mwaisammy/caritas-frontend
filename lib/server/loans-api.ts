@@ -12,7 +12,7 @@ export const rejectLoan = (input: {loanId: string; reason: string; loanOfficer: 
 // disburseLoan sends an approved loan to the backend's disbursement workflow.
 export const disburseLoan = (input: {loanId: string; reason: string; loanOfficer: string}) => goApiPost<{newStatus: LoanStatus; disbursedAt: string; referenceId: string}>("/api/v1/loans/disburse", input);
 // getLoan retrieves the authoritative record used by the loan workspace.
-export const getLoan = (input: {loanId: string}) => goApiPost<{loan?: Loan}>("/api/v1/loans/get", input);
+export const getLoan = (input: {loanId: string; memberId?: never} | {memberId: string; loanId?: never}) => goApiPost<{loan?: Loan}>("/api/v1/loans/get", input);
 // listLoans preserves backend cursors and the two filters exposed by the contract.
 export const listLoans = (input: {pageSize: number; pageToken?: string; statusFilter?: LoanStatus; memberId?: string}) => goApiPost<{loans: Loan[]; nextPageToken: string}>("/api/v1/loans/list", input);
 // getLoanStatus provides the previous state and last transition date for the summary.
