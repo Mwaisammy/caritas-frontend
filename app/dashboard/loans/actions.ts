@@ -8,7 +8,7 @@ import {auth} from "@/lib/auth";
 import type {ShareMoney} from "@/lib/go-api-client";
 import {getMember} from "@/lib/server/members-api";
 import {GoApiError} from "@/lib/server/go-api";
-import {addGuarantor, applyForLoan, approveGuarantor, approveLoan, disburseLoan, rejectLoan, removeGuarantor} from "@/lib/server/loans-api";
+import {addGuarantor, applyForLoan, approveGuarantor, approveLoan, disburseLoan, getLoan, rejectLoan, removeGuarantor} from "@/lib/server/loans-api";
 import {LOAN_BRANCH_ID} from "./config";
 
 // LoanActionState gives all loan forms one small success and validation contract.
@@ -34,6 +34,15 @@ export async function applyForLoanAction(_state: LoanActionState, formData: Form
   if (guarantors.some((item) => item.guaranteedAmount && !/^\d+(\.\d{1,2})?$/.test(item.guaranteedAmount))) return {ok: false, message: "Enter a valid guaranteed amount for every guarantor."};
   const officerId = await currentUserId(); if (!officerId) return {ok: false, message: "Your session has expired."};
   try {
+    const {loan} = await getLoan({memberId: parsed.data.memberId});
+    if (!loan) return {ok: false, message: "Could not verify this member's existing loan. Please try again."};
+    return {ok: false, message: "This member has an existing loan that must be closed before another application."};
+  } catch (error) {
+    if (!(error instanceof GoApiError && error.status === 404)) {
+      return {ok: false, message: "Could not verify this member's existing loan. Please try again."};
+    }
+  }
+  try {
     const resolvedGuarantors = await Promise.all(guarantors.filter((item) => item.nationalId).map(async (item) => {
       const {member} = await getMember({branchId: String(LOAN_BRANCH_ID), nationalId: item.nationalId});
       if (!member) throw new Error("Guarantor member not found");
@@ -50,9 +59,15 @@ export async function rejectLoanAction(_state: LoanActionState, formData: FormDa
    if (!loanOfficer) return {ok: false, message: "Your session has expired."}; try { await rejectLoan({...parsed.data, loanOfficer}); updateTag("loan-directory"); revalidatePath(`/dashboard/loans/${parsed.data.loanId}`);
    return {ok: true, message: "Loan rejected."}; } catch (error) { return failure(error); } }
 // disburseLoanAction records the authenticated officer before releasing approved funds.
-export async function disburseLoanAction(_state: LoanActionState, formData: FormData): Promise<LoanActionState> { const parsed = decisionSchema.safeParse(Object.fromEntries(formData)); 
-  if (!parsed.success) return {ok: false, message: "Provide a disbursement reason.", fieldErrors: parsed.error.flatten().fieldErrors}; const loanOfficer = await currentUserId(); 
-  if (!loanOfficer) return {ok: false, message: "Your session has expired."}; try { await disburseLoan({...parsed.data, loanOfficer}); updateTag("loan-directory"); revalidatePath(`/dashboard/loans/${parsed.data.loanId}`); return {ok: true, message: "Loan disbursed."}; } catch (error) { return failure(error); } }
+export async function disburseLoanAction(_state: LoanActionState, formData: FormData): Promise<LoanActionState> { 
+  const parsed = decisionSchema.safeParse(Object.fromEntries(formData)); 
+  if (!parsed.success) return {
+    ok: false, 
+    message: "Provide a disbursement reason.", 
+    fieldErrors: parsed.error.flatten().fieldErrors}; 
+    const loanOfficer = await currentUserId(); 
+  if (!loanOfficer) return {ok: false, message: "Your session has expired."}; 
+  try { await disburseLoan({...parsed.data, loanOfficer}); updateTag("loan-directory"); revalidatePath(`/dashboard/loans/${parsed.data.loanId}`); return {ok: true, message: "Loan disbursed."}; } catch (error) { return failure(error); } }
 
 // addGuarantorAction attaches a member and guaranteed amount to the current loan.
 export async function addGuarantorAction(_state: LoanActionState, formData: FormData): Promise<LoanActionState> { const parsed = z.object({loanId: z.string().min(1), guarantorId: z.string().trim().min(1), guaranteedAmount: z.string().trim().regex(/^\d+(\.\d{1,2})?$/)}).safeParse(Object.fromEntries(formData));
