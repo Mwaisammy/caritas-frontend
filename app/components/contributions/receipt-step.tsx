@@ -1,7 +1,5 @@
 "use client";
-
 import { BanknoteIcon, PrinterIcon, UserRoundPlusIcon } from "lucide-react";
-
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,30 +15,21 @@ import type {
   CashMemberState,
   CashMutationState,
 } from "@/app/dashboard/contributions/actions";
-import {
-  allocationLabel,
-  formatDecimalMoney,
-  formatMoney,
-  type ContributionDraft,
-} from "./contribution-utils";
-
+import { allocationLabel, formatMoney } from "./contribution-utils";
 // maskedNationalId limits identity exposure on a receipt that may be left at the printer.
 function maskedNationalId(value: string) {
   return value.length <= 4
     ? value
     : `${"•".repeat(value.length - 4)}${value.slice(-4)}`;
 }
-
 // ReceiptStep prints the confirmed receipt and only claims balances returned authoritatively.
 export function ReceiptStep({
-  draft,
   memberState,
   onAnotherMember,
   onCloseTill,
   state,
 }: {
-  draft: ContributionDraft;
-  memberState: Extract<CashMemberState, { ok: true }>;
+  memberState?: Extract<CashMemberState, { ok: true }>;
   onAnotherMember: () => void;
   onCloseTill: () => void;
   state: Extract<CashMutationState, { ok: true }>;
@@ -48,6 +37,11 @@ export function ReceiptStep({
   const receipt = state.receipt;
   if (!receipt) return null;
   const completed = receipt.status === "completed";
+  const member =
+    state.member ??
+    (memberState?.member.id === receipt.memberId
+      ? memberState.member
+      : undefined);
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
       <Card className="cash-receipt">
@@ -81,6 +75,13 @@ export function ReceiptStep({
               {receipt.internalReceiptReference}
             </p>
             <p>
+              <span className="text-muted-foreground">
+                Receipt ID for retrieval
+              </span>
+              <br />
+              <span className="font-mono text-xs">{receipt.id}</span>
+            </p>
+            <p>
               <span className="text-muted-foreground">Received</span>
               <br />
               {receipt.receivedAt
@@ -90,23 +91,22 @@ export function ReceiptStep({
             <p>
               <span className="text-muted-foreground">Member</span>
               <br />
-              {memberState.member.profile?.personal?.fullName ??
-                "Unnamed member"}
+              {member?.profile?.personal?.fullName ?? "Unnamed member"}
             </p>
             <p>
               <span className="text-muted-foreground">Member number</span>
               <br />
-              {memberState.member.memberNumber}
+              {member?.memberNumber ?? receipt.memberId}
             </p>
             <p>
               <span className="text-muted-foreground">National ID</span>
               <br />
-              {maskedNationalId(memberState.member.nationalId)}
+              {member ? maskedNationalId(member.nationalId) : "Not loaded"}
             </p>
             <p>
               <span className="text-muted-foreground">Contribution period</span>
               <br />
-              {draft.contributionPeriod}
+              {receipt.contributionPeriod.slice(0, 7)}
             </p>
             <p>
               <span className="text-muted-foreground">Session reference</span>
@@ -121,8 +121,12 @@ export function ReceiptStep({
           </div>
           <Separator />
           <section className="flex flex-col gap-2">
-            <h2 className="font-medium">Allocation</h2>
-            {draft.allocations.map((item) => (
+            <h2 className="font-medium">Recorded allocation plan</h2>
+            <p className="text-sm text-muted-foreground">
+              Loan payments are combined amounts. Loans records the actual
+              interest, principal, and credit split.
+            </p>
+            {(receipt.allocations ?? []).map((item) => (
               <div
                 className="flex items-center justify-between gap-4"
                 key={`${item.type}-${item.targetId ?? "general"}`}
@@ -131,7 +135,10 @@ export function ReceiptStep({
                   {allocationLabel(item.type)}
                   {item.targetId ? ` · ${item.targetId.slice(0, 8)}` : ""}
                 </span>
-                <strong>{formatDecimalMoney(item.amount)}</strong>
+                <span>
+                  {formatMoney(item.amount)} ·{" "}
+                  {item.status.replaceAll("_", " ")}
+                </span>
               </div>
             ))}
           </section>
@@ -139,24 +146,13 @@ export function ReceiptStep({
           <section className="grid gap-3 sm:grid-cols-2">
             <p>
               <span className="text-muted-foreground">
-                Updated share balance
+                Current share balance
               </span>
               <br />
               {completed
                 ? formatMoney(state.shareBalance)
                 : "Pending allocation"}
             </p>
-            {memberState.loans.map(({ loan }) => (
-              <p key={loan.id}>
-                <span className="text-muted-foreground">
-                  Loan updated balance
-                </span>
-                <br />
-                {completed
-                  ? "Not available from loan service"
-                  : "Pending allocation"}
-              </p>
-            ))}
           </section>
         </CardContent>
       </Card>

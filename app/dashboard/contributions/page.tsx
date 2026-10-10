@@ -1,6 +1,7 @@
+import { CashCustody } from "@/app/components/contributions/cash-custody";
 import { CashContributionFlow } from "@/app/components/contributions/cash-contribution-flow";
 
-// ContributionsPage introduces the cashier workflow without mixing in manager reconciliation.
+// ContributionsPage keeps collection and custody visible as distinct staff operations.
 export default function ContributionsPage() {
   return (
     <div className="min-h-full bg-muted/30 px-4 pb-14 sm:px-7 lg:px-9">
@@ -18,6 +19,7 @@ export default function ContributionsPage() {
           </p>
         </header>
         <CashContributionFlow />
+        <CashCustody />
       </div>
     </div>
   );
