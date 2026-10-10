@@ -23,4 +23,7 @@ export interface Loan {
   disbursed_at?: string;
   created_at: string;
   updated_at: string;
+  member_number: number;
+  member_name: string;
+  national_id: string;
 }

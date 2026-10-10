@@ -180,6 +180,7 @@ export interface CashierSession {
   id: string
   branchId: string
   cashierId: string
+  cashierName?: string
   status: CashierSessionStatus
   expectedAmount?: ShareMoney
   countedAmount?: ShareMoney
@@ -189,6 +190,8 @@ export interface CashierSession {
   closedAt?: string
   handedOverAt?: string
   depositedAt?: string
+  handedOverTo?: string
+  handedOverToName?: string
 }
 
 // CashAllocationType intentionally excludes contribution types the backend cannot process yet.
@@ -198,6 +201,7 @@ export type CashAllocationType =
   | "CONTRIBUTION_ALLOCATION_TYPE_SHARE_PURCHASE"
   | "CONTRIBUTION_ALLOCATION_TYPE_LOAN_PRINCIPAL"
   | "CONTRIBUTION_ALLOCATION_TYPE_OTHER_CHARGE"
+  | "CONTRIBUTION_ALLOCATION_TYPE_PENALTY"
 
 // CashAllocationInput keeps each amount tied to its owning share or loan target when required.
 export interface CashAllocationInput {
@@ -214,6 +218,9 @@ export interface CashContributionReceipt {
   status: "pending" | "processing" | "completed" | "failed" | "manual_review"
   amount: ShareMoney
   receivedAt?: string
+  memberId: string
+  contributionPeriod: string
+  allocations: (CashAllocationInput & {status: string; authoritativeReferenceId?: string})[]
 }
 
 // The status union keeps filters and badges aligned with the share service contract.
@@ -288,3 +295,17 @@ export interface RepaymentSchedule {id: string; loanId: string; installmentNo: n
 
 // LoanTransaction represents one immutable entry in payment history.
 export interface LoanTransaction {type: string; amount: string; referenceId: string; paymentGatewayTransactionId: string; createdAt: string; createdBy: string; loanId: string; transactionId: string}
+
+// ContributionCharge identifies an assessed obligation; without its ID a payment cannot target or settle it.
+export type ContributionCharge = {
+ id: string; memberId: string; category: string; amount: ShareMoney; paid: ShareMoney;
+ outstanding: ShareMoney; reason: string; createdAt: string
+}
+// CashContext comes from backend authorization; removing it makes branch and action availability guesses.
+export type CashContext = {staffId: string; branchId: string; canRecord: boolean; canApprove: boolean}
+// CashDeposit carries bank evidence and custody links; removing these facts prevents independent verification.
+export type CashDeposit = {
+ id: string; branchId: string; amount: ShareMoney; bankReference: string; status: "recorded" | "verified";
+ recordedBy: string; verifiedBy?: string; recordedAt: string; verifiedAt?: string; sessionIds?: string[]
+ recordedByName?: string; verifiedByName?: string
+}
