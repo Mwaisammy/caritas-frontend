@@ -14,12 +14,12 @@ import { ChevronDown } from "lucide-react";
 
 // import { loanData } from "../../data/loans";
 import { formatCurrency } from "../../../lib/format-currency";
-import type { Loan } from "@/app/types/loans";
+import type { Loan } from "@/lib/go-api-client";
 
 export function LoansOverview({ loans }: { loans: Loan[] }) {
   const loanData = loans.map((loan) => ({
     amount: Number(loan.principal),
-    month: new Date(loan.created_at).toLocaleDateString("en-KE", {
+    month: new Date(loan.createdAt).toLocaleDateString("en-KE", {
       month: "short",
     }),
   }));
