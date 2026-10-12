@@ -1,70 +1,7 @@
-import { ChevronRight, MoreHorizontal } from "lucide-react";
+import Link from "next/link";
+import type { Loan } from "@/app/types/loans";
+import { StatusBadge } from "./status-badge";
 
-// import { applications } from "../../data/loans";
-// import { StatusBadge } from "./status-badge";
-
-export function RecentApplications() {
-  return (
-    <section className="mt-5 rounded-2xl border border-gray-100 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-      <div className="mb-5 flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Recent Loan Applications</h2>
-
-        <button className="flex items-center gap-1 text-xs font-semibold text-[#c51f25]">
-          View all
-          <ChevronRight size={15} />
-        </button>
-      </div>
-
-      <div className="overflow-x-auto rounded-xl border border-gray-100">
-        <table className="w-full min-w-[850px]">
-          <thead>
-            <tr className="bg-gray-50 text-left text-xs text-slate-500">
-              <th className="px-4 py-3 font-medium">Member</th>
-
-              <th className="px-4 py-3 font-medium">Loan ID</th>
-
-              <th className="px-4 py-3 font-medium">Amount</th>
-
-              <th className="px-4 py-3 font-medium">Term</th>
-
-              <th className="px-4 py-3 font-medium">Status</th>
-
-              <th className="px-4 py-3 font-medium">Applied Date</th>
-
-              <th className="px-4 py-3 text-center font-medium">Actions</th>
-            </tr>
-          </thead>
-
-          {/* <tbody>
-            {applications.map((application) => (
-              <tr
-                key={application.id}
-                className="border-t border-gray-100 text-sm"
-              >
-                <td className="px-4 py-3 font-medium">{application.name}</td>
-
-                <td className="px-4 py-3 text-gray-500">{application.id}</td>
-
-                <td className="px-4 py-3">{application.amount}</td>
-
-                <td className="px-4 py-3 text-gray-500">{application.term}</td>
-
-                <td className="px-4 py-3">
-                  <StatusBadge status={application.status} />
-                </td>
-
-                <td className="px-4 py-3 text-gray-500">{application.date}</td>
-
-                <td className="px-4 py-3 text-center">
-                  <button className="rounded-md p-1.5 hover:bg-gray-100">
-                    <MoreHorizontal size={18} className="text-gray-500" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody> */}
-        </table>
-      </div>
-    </section>
-  );
+export function RecentApplications({ loans }: { loans: Loan[] }) {
+  return <section className="mt-5 rounded-2xl border border-gray-100 bg-white p-5"><h2 className="mb-5 text-lg font-semibold">Recent Loan Applications</h2><div className="overflow-x-auto rounded-xl border"><table className="w-full min-w-[850px]"><thead><tr className="bg-gray-50 text-left text-xs text-slate-500"><th className="px-4 py-3">Member</th><th className="px-4 py-3">Loan ID</th><th className="px-4 py-3">Amount</th><th className="px-4 py-3">Term</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Applied Date</th></tr></thead><tbody>{loans.map((loan) => <tr className="relative border-t text-sm hover:bg-gray-50 focus-within:ring-2 focus-within:ring-inset focus-within:ring-[#c51f25]" key={loan.id}><td className="px-4 py-3 font-medium"><Link className="after:absolute after:inset-0 focus:outline-none" href={`/dashboard/loans/${loan.id}`}>{loan.member_id}</Link></td><td className="px-4 py-3 text-gray-500">{loan.id}</td><td className="px-4 py-3">KES {Number(loan.principal).toLocaleString("en-KE")}</td><td className="px-4 py-3 text-gray-500">{loan.repayment_period_months} months</td><td className="px-4 py-3"><StatusBadge status={loan.status} /></td><td className="px-4 py-3 text-gray-500">{new Date(loan.created_at).toLocaleDateString("en-KE")}</td></tr>)}</tbody></table></div>{!loans.length ? <p className="py-8 text-center text-sm text-gray-500">No loan applications found.</p> : null}</section>;
 }
