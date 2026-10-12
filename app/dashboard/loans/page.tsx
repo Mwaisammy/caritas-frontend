@@ -22,7 +22,7 @@ export default async function LoansPage() {
             {/* <UpcomingRepayments /> */}
           </section>
 
-          <RecentApplications />
+          <RecentApplications loans={loanData.loans} />
         </div>
       </main>
     </div>
