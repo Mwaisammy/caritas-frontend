@@ -12,7 +12,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import type { CashMemberState } from "@/app/dashboard/contributions/actions"
 
 // MemberLookupStep searches one exact member identifier before financial data is shown.
-export function MemberLookupStep({ action, onCloseTill, pending, state }: {action: (data: FormData) => void; onCloseTill: () => void; pending: boolean; state: CashMemberState}) {
+export function MemberLookupStep({ action, onCloseTill, pending, state }: {action: (data: FormData) => void; onCloseTill?: () => void; pending: boolean; state: CashMemberState}) {
   const [lookupBy, setLookupBy] = useState("memberNumber")
   const error = state?.ok === false ? state.fieldErrors?.lookup?.[0] : undefined
   return (
@@ -45,9 +45,9 @@ export function MemberLookupStep({ action, onCloseTill, pending, state }: {actio
           </FieldGroup>
         </form>
       </CardContent>
-      <CardFooter className="justify-end">
+      {onCloseTill ? <CardFooter className="justify-end">
         <Button onClick={onCloseTill} type="button" variant="ghost">Close till</Button>
-      </CardFooter>
+      </CardFooter> : null}
     </Card>
   )
 }

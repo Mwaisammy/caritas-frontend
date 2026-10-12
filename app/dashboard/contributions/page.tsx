@@ -1,5 +1,4 @@
-import { CashCustody } from "@/app/components/contributions/cash-custody";
-import { CashContributionFlow } from "@/app/components/contributions/cash-contribution-flow";
+import { ContributionWorkspace } from "@/app/components/contributions/contribution-workspace";
 
 // ContributionsPage keeps collection and custody visible as distinct staff operations.
 export default function ContributionsPage() {
@@ -8,18 +7,16 @@ export default function ContributionsPage() {
       <div className="mx-auto flex max-w-6xl flex-col gap-6">
         <header className="flex flex-col gap-2 py-7">
           <p className="text-sm font-medium text-muted-foreground">
-            Cashier workspace
+            Collection workspace
           </p>
           <h1 className="text-3xl font-semibold tracking-tight">
-            Cash contributions
+            Contributions
           </h1>
           <p className="max-w-2xl text-sm text-muted-foreground">
-            Open your till, confirm the member, allocate the cash, and close
-            with an authoritative count.
+            Confirm the member and allocate a contribution collected by cash or M-Pesa.
           </p>
         </header>
-        <CashContributionFlow />
-        <CashCustody />
+        <ContributionWorkspace />
       </div>
     </div>
   );

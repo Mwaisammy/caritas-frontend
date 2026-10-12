@@ -7,11 +7,11 @@ import {
   useState,
   useTransition,
 } from "react";
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import type { CashContext, CashierSession } from "@/lib/go-api-client";
+import {Button} from "@/components/ui/button";
+import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
+import {Field, FieldGroup, FieldLabel} from "@/components/ui/field";
+import {Input} from "@/components/ui/input";
+import type {CashContext, CashierSession} from "@/lib/go-api-client";
 import {
   closeCashierSessionAction,
   findCashMemberAction,
@@ -22,14 +22,15 @@ import {
   type CashMemberState,
   type CashMutationState,
 } from "@/app/dashboard/contributions/actions";
-import { CloseTillStep } from "./close-till-step";
-import { ContributionEntryStep } from "./contribution-entry-step";
-import { ContributionProgress } from "./contribution-progress";
-import { emptyAmounts, type ContributionDraft } from "./contribution-utils";
-import { MemberLookupStep } from "./member-lookup-step";
-import { OpenTillStep } from "./open-till-step";
-import { ReceiptStep } from "./receipt-step";
-import { ReviewContributionStep } from "./review-contribution-step";
+import {CloseTillStep} from "./close-till-step";
+import {ContributionEntryStep} from "./contribution-entry-step";
+import {ContributionProgress} from "./contribution-progress";
+import {emptyAmounts, type ContributionDraft} from "./contribution-utils";
+import {MemberLookupStep} from "./member-lookup-step";
+import {OpenTillStep} from "./open-till-step";
+import {ReceiptStep} from "./receipt-step";
+import {ReviewContributionStep} from "./review-contribution-step";
+import {AlertTriangle} from "lucide-react";
 
 // CashStep names only rendered stages; removing it allows transitions to screens this flow cannot display.
 type CashStep = "till" | "member" | "entry" | "review" | "receipt" | "close";
@@ -177,7 +178,7 @@ export function CashContributionFlow() {
         if (result.retry || (uncertain.current && !result.definitive)) {
           uncertain.current = true;
           setRecovery(true);
-          result = { ...result, retry: true };
+          result = {...result, retry: true};
         } else {
           try {
             sessionStorage.removeItem(`cash-submission:${context.staffId}`);
@@ -371,10 +372,17 @@ export function CashContributionFlow() {
               </FieldLabel>
               <Input id="receiptId" name="receiptId" required />
             </Field>
-            <Button disabled={recording}>Load receipt</Button>
+            <Button disabled={recording} type="submit">
+              Load receipt
+            </Button>
           </FieldGroup>
           {recordState?.ok === false ? (
-            <p role="alert">{recordState.message}</p>
+            <div className="m-1.5 p-1.5 bg-rose-100 border flex items-center justify-center">
+              <AlertTriangle className="size-4 text-rose-500 m-2" />
+              <h3 role="alert" className="text-rose-500 text-xs tracking-tight">
+                {recordState.message}
+              </h3>
+            </div>
           ) : null}
         </form>
       ) : null}

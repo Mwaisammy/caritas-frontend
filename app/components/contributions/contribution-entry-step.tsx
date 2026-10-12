@@ -83,6 +83,7 @@ export function ContributionEntryStep({
   onBack,
   onReview,
   setAmounts,
+  paymentMethod = "cash",
 }: {
   amounts: AllocationAmounts;
   initialPeriod?: string;
@@ -90,6 +91,8 @@ export function ContributionEntryStep({
   onBack: () => void;
   onReview: (draft: ContributionDraft) => void;
   setAmounts: (amounts: AllocationAmounts) => void;
+  // The payment method changes collection wording and STK's total constraint only.
+  paymentMethod?: "cash" | "mpesa";
 }) {
   const [period, setPeriod] = useState(initialPeriod ?? currentPeriod());
   const [obligations, setObligations] = useState<Awaited<
@@ -141,7 +144,7 @@ export function ContributionEntryStep({
         </CardTitle>
         <CardDescription>
           Member {memberState.member.memberNumber} · Review the financial
-          position before entering cash.
+          position before entering the contribution.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
@@ -193,7 +196,7 @@ export function ContributionEntryStep({
               return (
                 <Card key={loan.id} size="sm">
                   <CardHeader>
-                    {/* <CardTitle>Loan {loan.id.slice(0, 8)}</CardTitle> */}
+                    <CardTitle>Loan {loan.id.slice(-8)}</CardTitle>
                     <CardDescription>
                       <Badge variant="outline">
                         {loan.status
@@ -205,10 +208,12 @@ export function ContributionEntryStep({
                   <CardContent className="grid gap-3 sm:grid-cols-2">
                     <p>
                       <span className="text-muted-foreground">
-                        Current balance:
+                        Remaining principal:
                       </span>
                       <br />
-                      Current balance unavailable
+                      {loan.outstandingPrincipal
+                        ? formatDecimalMoney(loan.outstandingPrincipal)
+                        : "Balance unavailable"}
                     </p>
                     <p>
                       <span className="text-muted-foreground">
@@ -270,8 +275,12 @@ export function ContributionEntryStep({
             }
             if (!ready || minorUnits(amounts.cash) <= 0 || difference !== 0) {
               setEntryError(
-                "Allocate the exact cash received, including unpaid monthly fees.",
+                "Allocate the exact contribution total, including unpaid monthly fees.",
               );
+              return;
+            }
+            if (paymentMethod === "mpesa" && minorUnits(amounts.cash) % 100 !== 0) {
+              setEntryError("M-Pesa requires a whole-shilling total. Adjust the total and allocations before reviewing.");
               return;
             }
             if (
@@ -294,7 +303,7 @@ export function ContributionEntryStep({
           <FieldGroup>
             <MoneyField
               id="cash"
-              label="Physical cash received (KES)"
+              label={paymentMethod === "mpesa" ? "M-Pesa amount to request (KES)" : "Physical cash received (KES)"}
               value={amounts.cash}
               onChange={(cash) => setAmounts({ ...amounts, cash })}
             />
@@ -312,7 +321,7 @@ export function ContributionEntryStep({
               />
             </Field>
             <FieldSet>
-              <FieldLegend>Cash allocation</FieldLegend>
+              <FieldLegend>Contribution allocation</FieldLegend>
               <FieldDescription>
                 Monthly fees are calculated for this member and period. Loans
                 determines the actual interest, principal, and credit split.
@@ -417,7 +426,7 @@ export function ContributionEntryStep({
                   <MoneyField
                     id={`loan-${loan.id}`}
                     key={loan.id}
-                    label={`Loan  payment (KES)`}
+                    label={`Loan ${loan.id.slice(-8)} payment (KES)`}
                     onChange={(amount) =>
                       setAmounts({
                         ...amounts,

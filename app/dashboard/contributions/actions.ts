@@ -14,6 +14,7 @@ import type {
   ShareMoney,
   ContributionCharge,
   CashDeposit,
+  ContributionPaymentRequest,
 } from "@/lib/go-api-client";
 import {
   closeCashierSession,
@@ -30,6 +31,8 @@ import {
   recordCashDeposit,
   verifyCashDeposit,
   createContributionCharge,
+  initiateDarajaContribution,
+  getContributionPaymentRequest,
 } from "@/lib/server/contributions-api";
 import { GoApiError } from "@/lib/server/go-api";
 import { getLoan, listLoans } from "@/lib/server/loans-api";
@@ -57,6 +60,88 @@ const allocationSchema = z.object({
   targetId: z.uuid().optional(),
   amount: positiveMoneySchema,
 });
+
+// STKState preserves uncertainty separately from an authoritative request result.
+export type STKState =
+  | null
+  | { ok: false; message: string; definitive?: boolean; fieldErrors?: Record<string, string[] | undefined> }
+  | { ok: true; request: ContributionPaymentRequest };
+
+// initiateSTKContributionAction validates the existing allocation shape and recovers
+// saved requests before eligibility checks, so retries cannot create another prompt.
+export async function initiateSTKContributionAction(data: FormData): Promise<STKState> {
+  const form = z.object({
+    idempotencyKey: z.uuid(),
+    memberId: z.uuid(),
+    phoneNumber: z.string().trim().transform((value) => value.replace(/[ -]/g, "").replace(/^\+/, ""))
+      .refine((value) => /^(?:254|0)?[17]\d{8}$/.test(value), "Enter a valid Kenyan mobile number."),
+    contributionPeriod: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+    amount: positiveMoneySchema.refine((value) => minorUnits(value) % 100 === 0, "M-Pesa requires a whole-shilling total."),
+  }).safeParse(Object.fromEntries(data));
+
+  const allocations = parseAllocations(data.get("allocations"));
+
+  if (!form.success || !allocations.success)
+    return { ok: false, definitive: true, message: "Check the payment details.", fieldErrors: {
+      ...form.error?.flatten().fieldErrors,
+      allocations: allocations.error?.issues.map((issue) => issue.message),
+    } };
+
+  if (allocations.data.reduce((sum, row) => sum + minorUnits(row.amount), 0) !== minorUnits(form.data.amount))
+    return { ok: false, definitive: true, message: "The payment must match the allocation total, including monthly fees." };
+
+  let posting = false;
+  try {
+    const existing = await getContributionPaymentRequest(form.data.idempotencyKey).catch((error) => {
+      if (error instanceof GoApiError && error.status === 404) return undefined;
+      throw error;
+    });
+    if (existing?.paymentRequestId) return { ok: true, request: existing };
+    const context = await getCashContext();
+    if (!context.canRecord) return { ok: false, definitive: true, message: "You do not have permission to request M-Pesa payments." };
+    const member = await getMember({ branchId: context.branchId, memberId: form.data.memberId });
+    if (member.member?.status !== "MEMBER_STATUS_ACTIVE")
+      return { ok: false, definitive: true, message: "The member is no longer eligible for contributions." };
+
+    if (!(await targetsBelongToMember(form.data.memberId, context.branchId, allocations.data)))
+      return { ok: false, definitive: true, message: "Check the selected share, loan, or charge targets." };
+    posting = true;
+
+    const request = await initiateDarajaContribution({
+      ...form.data,
+      contributionPeriod: `${form.data.contributionPeriod}-01`,
+      amount: moneyFrom(form.data.amount),
+      allocations: allocations.data.map((item) => ({ ...item, amount: moneyFrom(item.amount) })),
+    });
+    if (!request.paymentRequestId) return { ok: false, message: "The request could not be confirmed. Check its status before starting another payment." };
+    return { ok: true, request };
+  } catch (error) {
+    console.error("M-Pesa contribution request failed", error);
+    const rejected = error instanceof GoApiError && [3, 5, 7, 9, 16].includes(error.code ?? 0);
+    return { ok: false, definitive: !posting || rejected, message: rejected
+      ? error.detail ?? "The request was rejected. Check the details and your staff permissions."
+      : posting
+      ? "The payment request could not be confirmed. Check status or retry the same request."
+      : "The payment details could not be checked. Try again." };
+  }
+}
+
+// checkSTKContributionAction only reads stored state; a missing record cannot prove
+// that an initiation still in flight failed, so the browser retains the saved request.
+export async function checkSTKContributionAction(idempotencyKey: string): Promise<STKState> {
+  if (!z.uuid().safeParse(idempotencyKey).success)
+    return { ok: false, message: "The saved payment reference is invalid." };
+  try {
+    const request = await getContributionPaymentRequest(idempotencyKey);
+    if (!request.paymentRequestId) return { ok: false, message: "Payment status is unavailable. Check again." };
+    return { ok: true, request };
+  } catch (error) {
+    const missing = error instanceof GoApiError && error.status === 404;
+    return { ok: false, message: missing
+      ? "No payment request is visible yet. Check again or retry the same saved request."
+      : "Unable to check payment status. Try again; this does not mean the payment failed." };
+  }
+}
 
 // CashErrorState gives every action the same retry and field-error contract.
 export type CashErrorState = {
@@ -246,7 +331,7 @@ export async function findCashMemberAction(
     if (member.status !== "MEMBER_STATUS_ACTIVE")
       return {
         ok: false,
-        message: "Cash contributions can only be recorded for active members.",
+        message: "Contributions can only be recorded for active members.",
       };
   } catch (error) {
     if (error instanceof GoApiError && error.status === 404)
@@ -268,12 +353,14 @@ export async function findCashMemberAction(
         rows.push(...(page.loans ?? []));
         pageToken = page.nextPageToken ?? "";
       } while (pageToken);
-      return rows.filter((loan) =>
-        [
-          "LOAN_STATUS_DISBURSED",
-          "LOAN_STATUS_ACTIVE",
-          "LOAN_STATUS_DELINQUENT",
-        ].includes(loan.status),
+      return rows.filter(
+        (loan) =>
+          loan.memberId === member.id &&
+          [
+            "LOAN_STATUS_DISBURSED",
+            "LOAN_STATUS_ACTIVE",
+            "LOAN_STATUS_DELINQUENT",
+          ].includes(loan.status),
       );
     })(),
   ]);
