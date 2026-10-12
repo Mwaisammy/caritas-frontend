@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { Loan } from "../../app/types/loans";
+import type { Loan } from "@/lib/go-api-client";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import {cacheLife, cacheTag} from "next/cache";
@@ -9,7 +9,7 @@ const API_URL = process.env.CARITAS_BACKEND_URL;
 
 export interface ListLoansResponse {
   loans: Loan[];
-  next_page_token?: string;
+  nextPageToken?: string;
 }
 
 export async function getLoans(): Promise<ListLoansResponse> {
@@ -39,9 +39,11 @@ export async function getLoans(): Promise<ListLoansResponse> {
     throw new Error("Failed to create a backend access token");
   }
 
-  const response = await fetch(
-    `${API_URL}/api/v1/loans/list`,
-    {
+  const loans: Loan[] = [];
+  let pageToken = "";
+
+  do {
+    const response = await fetch(`${API_URL}/api/v1/loans/list`, {
       method: "POST",
       cache: "no-store",
       headers: {
@@ -49,25 +51,26 @@ export async function getLoans(): Promise<ListLoansResponse> {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        page_size: 50,
+        pageSize: 50,
+        pageToken,
       }),
-    },
-  );
+    });
 
-  const body: unknown = await response.json().catch(() => null);
+    const body: unknown = await response.json().catch(() => null);
 
-  if (!response.ok) {
-    const backendMessage =
-      body &&
-      typeof body === "object" &&
-      "message" in body
-        ? String(body.message)
-        : `HTTP ${response.status}`;
+    if (!response.ok) {
+      const backendMessage =
+        body && typeof body === "object" && "message" in body
+          ? String(body.message)
+          : `HTTP ${response.status}`;
 
-    throw new Error(
-      `Failed to fetch loans: ${backendMessage}`,
-    );
-  }
+      throw new Error(`Failed to fetch loans: ${backendMessage}`);
+    }
 
-  return body as ListLoansResponse;
+    const page = body as ListLoansResponse;
+    loans.push(...(page.loans ?? []));
+    pageToken = page.nextPageToken ?? "";
+  } while (pageToken);
+
+  return {loans};
 }

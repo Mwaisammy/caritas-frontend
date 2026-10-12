@@ -1,19 +1,16 @@
-import { ArrowDownRight, ArrowUpRight } from "lucide-react";
 import type { ReactNode } from "react";
 
 interface LoanStatCardProps {
   title: string;
   amount: string;
-  percentage: string;
-  direction: "up" | "down";
+  detail: string;
   icon: ReactNode;
 }
 
 export function LoanStatCard({
   title,
   amount,
-  percentage,
-  direction,
+  detail,
   icon,
 }: LoanStatCardProps) {
   return (
@@ -32,17 +29,7 @@ export function LoanStatCard({
         </div>
       </div>
 
-      <div className="mt-3 flex items-center gap-2 text-sm">
-        {direction === "up" ? (
-          <ArrowUpRight size={17} className="text-green-600" />
-        ) : (
-          <ArrowDownRight size={17} className="text-green-600" />
-        )}
-
-        <span className="font-medium text-green-600">{percentage}</span>
-
-        <span className="text-gray-500">from last month</span>
-      </div>
+      <p className="mt-3 text-sm text-gray-500">{detail}</p>
     </div>
   );
 }
