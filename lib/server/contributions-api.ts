@@ -8,8 +8,23 @@ import type {
   ContributionCharge,
   CashContext,
   CashDeposit,
+  ContributionPaymentRequest,
 } from "@/lib/go-api-client";
 import { goApiGet, goApiPost } from "@/lib/server/go-api";
+
+// initiateDarajaContribution uses the authenticated gateway without exposing Daraja credentials.
+export const initiateDarajaContribution = (input: {
+  idempotencyKey: string;
+  memberId: string;
+  phoneNumber: string;
+  amount: ShareMoney;
+  contributionPeriod: string;
+  allocations: CashAllocationInput[];
+}) => goApiPost<ContributionPaymentRequest>("/api/v1/contributions/initiate-daraja-stk", input);
+
+// getContributionPaymentRequest recovers a lost initiation response without sending another prompt.
+export const getContributionPaymentRequest = async (idempotencyKey: string) =>
+  (await goApiGet(`/api/v1/contributions/payment-requests/by-idempotency-key/${encodeURIComponent(idempotencyKey)}`)) as ContributionPaymentRequest;
 
 // openCashierSession opens a till or returns the authenticated cashier's existing open till.
 export const openCashierSession = () =>

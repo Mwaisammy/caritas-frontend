@@ -282,7 +282,7 @@ export type RepaymentStatus = "REPAYMENT_STATUS_UNSPECIFIED" | "REPAYMENT_STATUS
 export interface ProposedGuarantor {guarantorId: string; guaranteedAmount: string}
 
 // Loan contains backend data plus optional member display fields supplied by an enriched list response.
-export interface Loan {id: string; memberId: string; memberNumber?: string; memberName?: string; branchId: string; principal: string; interestRate: string; repaymentPeriodMonths: number; status: LoanStatus; disbursedAt?: string; createdAt: string; updatedAt: string; updatedBy: string; previousStatus: string}
+export interface Loan {id: string; memberId: string; memberNumber?: string; memberName?: string; branchId: string; principal: string; outstandingPrincipal?: string; interestRate: string; repaymentPeriodMonths: number; status: LoanStatus; disbursedAt?: string; createdAt: string; updatedAt: string; updatedBy: string; previousStatus: string}
 
 // LoanGuarantor identifies a guarantee and optionally carries its member-facing labels.
 export interface LoanGuarantor {loanId: string; guarantorId: string; guarantorNumber?: string; guarantorName?: string; guaranteedAmount: string; status: GuarantorStatus; approvedAt?: string; approvedBy: string; createdAt: string}
@@ -303,6 +303,30 @@ export type ContributionCharge = {
 }
 // CashContext comes from backend authorization; removing it makes branch and action availability guesses.
 export type CashContext = {staffId: string; branchId: string; canRecord: boolean; canApprove: boolean}
+
+// PaymentRequestStatus distinguishes prompt/payment state from receipt processing.
+export type PaymentRequestStatus =
+  | "CONTRIBUTION_PAYMENT_REQUEST_STATUS_UNSPECIFIED"
+  | "CONTRIBUTION_PAYMENT_REQUEST_STATUS_PENDING"
+  | "CONTRIBUTION_PAYMENT_REQUEST_STATUS_COMPLETED"
+  | "CONTRIBUTION_PAYMENT_REQUEST_STATUS_FAILED";
+
+// ContributionPaymentRequest carries the backend outcome used for recovery and status checks.
+export type ContributionPaymentRequest = {
+  paymentRequestId: string;
+  status: PaymentRequestStatus;
+  amount?: ShareMoney;
+  contributionPeriod?: string;
+  createdAt?: string;
+  failureReason?: string;
+  receipt?: {
+    id: string;
+    status: string;
+    amount: ShareMoney;
+    mpesaReference?: string;
+    receivedAt?: string;
+  };
+};
 // CashDeposit carries bank evidence and custody links; removing these facts prevents independent verification.
 export type CashDeposit = {
  id: string; branchId: string; amount: ShareMoney; bankReference: string; status: "recorded" | "verified";
