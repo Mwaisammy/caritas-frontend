@@ -97,19 +97,22 @@ export function CashContributionFlow() {
     };
   }, []);
 
-  const [memberState, findAction, finding] = useActionState(
-    async (previous: CashMemberState, data: FormData) => {
-      const result = await findCashMemberAction(previous, data);
-      if (result?.ok) {
-        setAmounts(emptyAmounts(result.loans));
-        setDraft(null);
-        setRecordState(null);
-        setStep("entry");
-      }
-      return result;
-    },
-    null,
-  );
+  const [memberState, setMemberState] = useState<CashMemberState>(null);
+  const [finding, startFinding] = useTransition();
+  // Commit the found member with the entry screen; action state can still contain the previous member.
+  const findAction = (data: FormData) =>
+    startFinding(async () => {
+      const result = await findCashMemberAction(null, data);
+      startFinding(() => {
+        setMemberState(result);
+        if (result?.ok) {
+          setAmounts(emptyAmounts(result.loans));
+          setDraft(null);
+          setRecordState(null);
+          setStep("entry");
+        }
+      });
+    });
   const [openState, openAction, opening] = useActionState(async () => {
     const result = await openCashierSessionAction();
     if (result?.ok && result.session) {

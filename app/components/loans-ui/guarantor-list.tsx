@@ -1,185 +1,104 @@
 "use client";
 
-import { useActionState, useRef } from "react";
+import {useActionState} from "react";
 import Link from "next/link";
-import { ArrowRight, LoaderCircle, Plus, ShieldCheck, Trash2, X } from "lucide-react";
+import {ArrowRight, LoaderCircle, Plus, ShieldCheck, Trash2} from "lucide-react";
 
-import {
-  addGuarantorAction,
-  approveGuarantorAction,
-  removeGuarantorAction,
-} from "@/app/dashboard/loans/actions";
-import type { LoanGuarantor } from "@/lib/go-api-client";
-import { LoanFeedback, LoanFieldError, loanInputClass } from "./form-parts";
-import { formatLoanMoney, LoanBadge } from "./loan-badges";
+import {addGuarantorAction, approveGuarantorAction, removeGuarantorAction} from "@/app/dashboard/loans/actions";
+import type {Loan, LoanGuarantor} from "@/lib/go-api-client";
+import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
+import {Button} from "@/components/ui/button";
+import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger} from "@/components/ui/dialog";
+import {Empty, EmptyDescription, EmptyHeader, EmptyTitle} from "@/components/ui/empty";
+import {GuarantorFields} from "./guarantor-fields";
+import {LoanFeedback} from "./form-parts";
+import {formatLoanMoney, LoanBadge} from "./loan-badges";
 
-// GuarantorButton runs one row action without introducing shared client state for the whole table.
-function GuarantorButton({
-  loanId,
-  guarantorId,
-  kind,
-}: {
-  loanId: string;
-  guarantorId: string;
-  kind: "approve" | "remove";
-}) {
-  const [state, action, pending] = useActionState(
-    kind === "approve" ? approveGuarantorAction : removeGuarantorAction,
-    null,
-  );
+// GuarantorButton keeps each decision's pending state and visible feedback beside its guarantee.
+function GuarantorButton({loanId, guarantorId, kind}: {loanId: string; guarantorId: string; kind: "approve" | "remove"}) {
+  const [state, action, pending] = useActionState(kind === "approve" ? approveGuarantorAction : removeGuarantorAction, null);
   const Icon = kind === "approve" ? ShieldCheck : Trash2;
   return (
-    <form action={action}>
+    <form action={action} className="flex flex-col gap-2">
       <input name="loanId" type="hidden" value={loanId} />
       <input name="guarantorId" type="hidden" value={guarantorId} />
-      <button
-        aria-label={`${kind} guarantor`}
-        className={`rounded-lg border p-2 ${kind === "remove" ? "text-red-700" : "text-emerald-700"}`}
-        disabled={pending}
-        title={`${kind} guarantor`}
-        type="submit"
-      >
-        {pending ? (
-          <LoaderCircle className="size-4 animate-spin" />
-        ) : (
-          <Icon className="size-4" />
-        )}
-      </button>
-      {state && !state.ok ? (
-        <span className="sr-only">{state.message}</span>
-      ) : null}
+      <Button variant="outline" size="sm" disabled={pending} type="submit">
+        {pending ? <LoaderCircle className="animate-spin" data-icon="inline-start" /> : <Icon data-icon="inline-start" />}
+        {kind === "approve" ? "Approve" : "Remove"}
+      </Button>
+      <LoanFeedback state={state} />
     </form>
   );
 }
-// AddGuarantorDialog captures the two fields required to attach another guarantee.
-function AddGuarantorDialog({ loanId }: { loanId: string }) {
-  const dialog = useRef<HTMLDialogElement>(null);
+
+// AddGuarantorDialog reuses the application capacity check so new guarantees follow the same rules.
+function AddGuarantorDialog({loan}: {loan: Loan}) {
   const [state, action, pending] = useActionState(addGuarantorAction, null);
   return (
-    <>
-      <button
-        className="inline-flex h-9 items-center gap-2 rounded-lg bg-stone-900 px-3 text-sm font-semibold text-white"
-        onClick={() => dialog.current?.showModal()}
-        type="button"
-      >
-        <Plus className="size-4" />
-        Add guarantor
-      </button>
-      <dialog
-        className="m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl border-0 p-0 shadow-2xl backdrop:bg-stone-950/35"
-        ref={dialog}
-      >
-        <div className="flex justify-between border-b p-5">
-          <h2 className="font-semibold">Add guarantor</h2>
-          <button onClick={() => dialog.current?.close()} type="button">
-            <X className="size-4" />
-          </button>
-        </div>
-        <form action={action} className="space-y-4 p-5">
-          <input name="loanId" type="hidden" value={loanId} />
-          <label className="block text-sm font-medium">
-            Guarantor member ID
-            <input className={loanInputClass} name="guarantorId" required />
-          </label>
-          <LoanFieldError name="guarantorId" state={state} />
-          <label className="block text-sm font-medium">
-            Guaranteed amount
-            <input
-              className={loanInputClass}
-              inputMode="decimal"
-              name="guaranteedAmount"
-              required
-            />
-          </label>
+    <Dialog>
+      <DialogTrigger render={<Button variant="outline" />}><Plus data-icon="inline-start" />Add guarantor</DialogTrigger>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Add guarantor</DialogTitle>
+          <DialogDescription>Can offer up to 30% of current shares minus all active pledges. Shares are reserved when the guarantee is approved.</DialogDescription>
+        </DialogHeader>
+        <form action={action} className="flex flex-col gap-4">
+          <input name="loanId" type="hidden" value={loan.id} />
+          <GuarantorFields applicantId={loan.memberId} disabled={pending} required state={state} />
           <LoanFeedback state={state} />
-          <button
-            className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#a91521] px-4 text-sm font-semibold text-white"
-            disabled={pending}
-            type="submit"
-          >
-            {pending ? (
-              <LoaderCircle className="size-4 animate-spin" />
-            ) : (
-              <Plus className="size-4" />
-            )}
-            Add guarantor
-          </button>
+          <Button type="submit" disabled={pending}>{pending ? <LoaderCircle className="animate-spin" data-icon="inline-start" /> : <Plus data-icon="inline-start" />}Add guarantor</Button>
         </form>
-      </dialog>
-    </>
+      </DialogContent>
+    </Dialog>
   );
 }
-// GuarantorList shows commitments and keeps approval or removal beside the affected guarantor.
-export function GuarantorList({
-  loanId,
-  guarantors,
-  nextHref,
-}: {
-  loanId: string;
-  guarantors: LoanGuarantor[];
-  nextHref?: string;
-}) {
+
+// GuarantorList displays approved coverage separately from proposals so an
+// undersecured loan cannot appear ready for approval.
+export function GuarantorList({loan, guarantors, nextHref}: {loan: Loan; guarantors: LoanGuarantor[]; nextHref?: string}) {
+  const canChange = loan.status === "LOAN_STATUS_PENDING";
   return (
-    <section className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b px-5 py-4">
-        <div>
-          <h2 className="font-semibold">Guarantors</h2>
-          <p className="mt-1 text-xs text-stone-500">
-            Member commitments and approvals
-          </p>
-        </div>
-        <AddGuarantorDialog loanId={loanId} />
+    <section className="flex flex-col gap-4 rounded-2xl border bg-card p-5">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="font-semibold">Guarantors and security</h2>
+        {canChange ? <AddGuarantorDialog loan={loan} /> : null}
       </div>
-      {guarantors.length ? (
-        <div className="divide-y">
-          {guarantors.map((item) => (
-            <div
-              className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center"
-              key={item.guarantorId}
-            >
-              <div className="min-w-0 flex-1">
-                <h3 className="break-words font-semibold">
-                  {item.guarantorName || "Guarantor"}
-                </h3>
-                <p className="break-all text-xs text-stone-500">
-                  {item.guarantorNumber || item.guarantorId}
-                </p>
-              </div>
-              <strong>{formatLoanMoney(item.guaranteedAmount)}</strong>
-              <LoanBadge status={item.status} />
-              <div className="flex gap-2">
-                {item.status === "GUARANTOR_STATUS_PENDING" ? (
-                  <GuarantorButton
-                    guarantorId={item.guarantorId}
-                    kind="approve"
-                    loanId={loanId}
-                  />
-                ) : null}
-                <GuarantorButton
-                  guarantorId={item.guarantorId}
-                  kind="remove"
-                  loanId={loanId}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className="p-10 text-center text-sm text-stone-500">
-          No guarantors are attached to this loan.
-        </p>
-      )}
-      {nextHref ? (
-        <div className="flex justify-end border-t px-5 py-4">
-          <Link
-            className="inline-flex items-center gap-2 text-sm font-semibold text-[#a91521]"
-            href={nextHref}
-          >
-            More guarantors
-            <ArrowRight className="size-4" />
-          </Link>
-        </div>
+      {canChange || loan.status === "LOAN_STATUS_APPROVED" ? (
+        <Alert>
+          <AlertTitle>Loan security coverage</AlertTitle>
+          <AlertDescription>
+            <dl className="grid grid-cols-2 gap-x-3 gap-y-1">
+              <dt>Principal</dt><dd>{formatLoanMoney(loan.principal)}</dd>
+              <dt>Applicant pledge</dt><dd>{formatLoanMoney(loan.applicantSharePledge)}</dd>
+              <dt>Approved guarantees</dt><dd>{formatLoanMoney(loan.approvedGuarantorCoverage)}</dd>
+              <dt>Remaining shortfall</dt><dd>{formatLoanMoney(loan.collateralShortfall)}</dd>
+            </dl>
+            <p>Pending guarantees do not count. Approve enough security to cover the principal; extra pending guarantors do not block loan approval. Eligibility and active security are checked again before disbursement.</p>
+          </AlertDescription>
+        </Alert>
       ) : null}
+      <p className="text-sm text-muted-foreground">Guarantor limit: 30% of their current shares, minus all active pledges. Approval reserves the guaranteed amount.</p>
+      {guarantors.length ? guarantors.map((item) => (
+        <div key={item.guarantorId} className="flex flex-col gap-3 rounded-xl border p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="font-semibold">{item.guarantorName || "Unnamed member"}</h3>
+              <p className="text-xs text-muted-foreground">Member no. {item.guarantorNumber || "Unavailable"}</p>
+            </div>
+            <strong>{formatLoanMoney(item.guaranteedAmount)}</strong>
+            <LoanBadge status={item.status} />
+          </div>
+          {canChange && item.status !== "GUARANTOR_STATUS_REJECTED" ? (
+            <div className="flex flex-col gap-2">
+              {item.status === "GUARANTOR_STATUS_PENDING" ? <GuarantorButton guarantorId={item.guarantorId} kind="approve" loanId={loan.id} /> : null}
+              <GuarantorButton guarantorId={item.guarantorId} kind="remove" loanId={loan.id} />
+            </div>
+          ) : null}
+        </div>
+      )) : (
+        <Empty><EmptyHeader><EmptyTitle>No guarantors attached</EmptyTitle><EmptyDescription>Guarantors are optional when applicant security covers the principal.</EmptyDescription></EmptyHeader></Empty>
+      )}
+      {nextHref ? <Button variant="outline" render={<Link href={nextHref} />}>More guarantors<ArrowRight data-icon="inline-end" /></Button> : null}
     </section>
   );
 }

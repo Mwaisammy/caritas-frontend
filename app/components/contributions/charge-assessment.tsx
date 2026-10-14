@@ -1,16 +1,11 @@
 "use client";
 
-import { useActionState, useEffect, useState, useTransition } from "react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import {
-  Field,
-  FieldGroup,
-  FieldLabel,
-  FieldTitle,
-} from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {useActionState, useEffect, useState, useTransition} from "react";
+import {Alert, AlertDescription} from "@/components/ui/alert";
+import {Button} from "@/components/ui/button";
+import {Field, FieldGroup, FieldLabel, FieldTitle} from "@/components/ui/field";
+import {Input} from "@/components/ui/input";
+import {ToggleGroup, ToggleGroupItem} from "@/components/ui/toggle-group";
 import {
   assessCashChargeAction,
   type CashMutationState,
@@ -190,7 +185,10 @@ export function ChargeAssessment({
               <AlertDescription>{state.message}</AlertDescription>
             </Alert>
           ) : null}
-          <Button disabled={pending || restoring || Boolean(storageError)}>
+          <Button
+            disabled={pending || restoring || Boolean(storageError)}
+            type="submit"
+          >
             {locked ? "Retry same assessment" : "Create charge obligation"}
           </Button>
         </FieldGroup>

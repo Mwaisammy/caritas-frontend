@@ -1,4 +1,5 @@
 "use client";
+import { useEffect, useState, useTransition } from "react";
 import { BanknoteIcon, PrinterIcon, UserRoundPlusIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -11,9 +12,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import type {
-  CashMemberState,
-  CashMutationState,
+import {
+  loadCashReceiptDetailsAction,
+  recoverCashReceiptAction,
+  type CashMemberState,
+  type CashMutationState,
 } from "@/app/dashboard/contributions/actions";
 import { allocationLabel, formatMoney } from "./contribution-utils";
 // maskedNationalId limits identity exposure on a receipt that may be left at the printer.
@@ -34,11 +37,34 @@ export function ReceiptStep({
   onCloseTill: () => void;
   state: Extract<CashMutationState, { ok: true }>;
 }) {
-  const receipt = state.receipt;
+  const [refreshed, setRefreshed] = useState(state.receipt);
+  const [details, setDetails] = useState(state);
+  const [statusError, setStatusError] = useState("");
+  const [loadingDetails, startDetails] = useTransition();
+  const [checking, startChecking] = useTransition();
+  const receipt = refreshed?.id === state.receipt?.id ? refreshed : state.receipt;
+  useEffect(() => {
+    if (!receipt) return;
+    let active = true;
+    startDetails(async () => {
+      const result = await loadCashReceiptDetailsAction(receipt.id).catch(
+        () => undefined,
+      );
+      if (active && result?.ok) setDetails({ message: "", receipt, ...result });
+    });
+    return () => {
+      active = false;
+    };
+  }, [receipt]);
   if (!receipt) return null;
   const completed = receipt.status === "completed";
+  const pending = receipt.status === "pending" || receipt.status === "processing";
+  const shareBalance =
+    details.receipt?.id === receipt.id && details.receipt.status === "completed"
+      ? details.shareBalance
+      : undefined;
   const member =
-    state.member ??
+    (details.receipt?.id === receipt.id ? details.member : undefined) ??
     (memberState?.member.id === receipt.memberId
       ? memberState.member
       : undefined);
@@ -61,11 +87,43 @@ export function ReceiptStep({
         <CardContent className="flex flex-col gap-4">
           {!completed ? (
             <Alert>
-              <AlertTitle>Allocation pending review</AlertTitle>
+              <AlertTitle>
+                {pending ? "Allocations pending" : "Allocation requires review"}
+              </AlertTitle>
               <AlertDescription>
                 Cash was received, but share and loan balances are not confirmed
                 as updated.
+                {pending
+                  ? " Processing will retry automatically. Check the status to see the result."
+                  : " Ask a manager to review this receipt."}
               </AlertDescription>
+              {pending ? (
+                <Button
+                  variant="outline"
+                  disabled={checking}
+                  onClick={() =>
+                    startChecking(async () => {
+                      setStatusError("");
+                      try {
+                        const result = await recoverCashReceiptAction({
+                          receiptId: receipt.id,
+                        });
+                        if (result?.ok && result.receipt)
+                          setRefreshed(result.receipt);
+                        else
+                          setStatusError(
+                            result?.message ?? "Unable to check receipt status.",
+                          );
+                      } catch {
+                        setStatusError("Unable to check receipt status. Try again.");
+                      }
+                    })
+                  }
+                >
+                  {checking ? "Checking..." : "Check allocation status"}
+                </Button>
+              ) : null}
+              {statusError ? <p role="alert">{statusError}</p> : null}
             </Alert>
           ) : null}
           <div className="grid gap-3 sm:grid-cols-2">
@@ -121,26 +179,42 @@ export function ReceiptStep({
           </div>
           <Separator />
           <section className="flex flex-col gap-2">
-            <h2 className="font-medium">Recorded allocation plan</h2>
+            <h2 className="font-medium">{completed ? "Payment breakdown" : "Recorded allocation plan"}</h2>
             <p className="text-sm text-muted-foreground">
               Loan payments are combined amounts. Loans records the actual
               interest, principal, and credit split.
             </p>
-            {(receipt.allocations ?? []).map((item) => (
+            {(receipt.allocations ?? []).map((item) => {
+              const [label, ...reason] = (item.displayLabel || allocationLabel(item.type)).split(" · ");
+              return (
               <div
                 className="flex items-center justify-between gap-4"
                 key={`${item.type}-${item.targetId ?? "general"}`}
               >
-                <span>
-                  {allocationLabel(item.type)}
-                  {item.targetId ? ` · ${item.targetId.slice(0, 8)}` : ""}
+                <span className="min-w-0">
+                  {label}
+                  {reason.length ? (
+                    <mark className="mt-1 block max-w-sm rounded bg-accent px-2 py-1 font-mono text-xs text-accent-foreground wrap-anywhere">
+                      {reason.join(" · ")}
+                    </mark>
+                  ) : null}
+                  {item.targetId && !item.displayLabel ? (
+                    <span className="block break-all text-xs text-muted-foreground">
+                      {item.type === "CONTRIBUTION_ALLOCATION_TYPE_LOAN_PRINCIPAL" ? "Loan reference" : "Reference"}: {item.targetId}
+                    </span>
+                  ) : null}
                 </span>
-                <span>
-                  {formatMoney(item.amount)} ·{" "}
-                  {item.status.replaceAll("_", " ")}
+                <span className="shrink-0">
+                  {formatMoney(item.amount)}
+                  {!completed ? ` · ${item.status.replaceAll("_", " ")}` : ""}
                 </span>
               </div>
-            ))}
+              );
+            })}
+            <div className="flex justify-between gap-4 font-semibold">
+              <span>Total received</span>
+              <span>{formatMoney(receipt.amount)}</span>
+            </div>
           </section>
           <Separator />
           <section className="grid gap-3 sm:grid-cols-2">
@@ -150,7 +224,7 @@ export function ReceiptStep({
               </span>
               <br />
               {completed
-                ? formatMoney(state.shareBalance)
+                ? loadingDetails ? "Loading balance..." : formatMoney(shareBalance)
                 : "Pending allocation"}
             </p>
           </section>

@@ -15,4 +15,4 @@ function LoanDecisionButton({loanId, kind}: {loanId: string; kind: "approve" | "
 }
 
 // LoanLifecycleActions exposes only transitions supported by the current loan state.
-export function LoanLifecycleActions({loanId, status}: {loanId: string; status: LoanStatus}) { if (status === "LOAN_STATUS_PENDING" || status === "LOAN_STATUS_MANUAL_REVIEW") return <><LoanDecisionButton kind="approve" loanId={loanId} /><LoanDecisionButton kind="reject" loanId={loanId} /></>; if (status === "LOAN_STATUS_APPROVED") return <LoanDecisionButton kind="disburse" loanId={loanId} />; return null; }
+export function LoanLifecycleActions({loanId, status}: {loanId: string; status: LoanStatus}) { if (status === "LOAN_STATUS_PENDING") return <><LoanDecisionButton kind="approve" loanId={loanId} /><LoanDecisionButton kind="reject" loanId={loanId} /></>; if (status === "LOAN_STATUS_APPROVED") return <LoanDecisionButton kind="disburse" loanId={loanId} />; return null; }
