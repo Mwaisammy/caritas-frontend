@@ -14,6 +14,8 @@ export type ContributionAllocationDraft = {
   type: CashAllocationType;
   targetId?: string;
   amount: string;
+  // Display-only charge wording accompanies the draft; the backend snapshots its own trusted wording.
+  displayLabel?: string;
 };
 
 // ContributionDraft is the immutable browser snapshot submitted for one receipt.
@@ -65,6 +67,14 @@ export function draftAllocations(
         : "CONTRIBUTION_ALLOCATION_TYPE_OTHER_CHARGE") as CashAllocationType,
       targetId: charge.id,
       amount: amounts.charges[charge.id] ?? "",
+      displayLabel: `${({
+        literature: "Literature",
+        caritas_registration: "Caritas registration",
+        lsf: "LSF",
+        laptop: "Laptop",
+        penalty: "Non-loan penalty",
+        other: "Other charge",
+      } as Record<string, string>)[charge.category] ?? "Assessed charge"} · ${charge.reason}`,
     })),
     ...(shareAccountId
       ? [

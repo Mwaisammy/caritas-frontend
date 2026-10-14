@@ -8,7 +8,7 @@ export const openShareAccount = (input: {memberId: string; branchId: string}) =>
   goApiPost<{accountId: string; status: ShareAccountStatus}>("/api/v1/shares/open-account", input);
 
 // This wrapper supports internal account lookup plus the two identifiers administrators recognize.
-export const getShareAccount = (input: {branchId: string; accountId?: string; memberNumber?: number; nationalId?: string}) =>
+export const getShareAccount = (input: {branchId: string; accountId?: string; memberId?: string; memberNumber?: number; nationalId?: string}) =>
   goApiPost<{account?: ShareAccount}>("/api/v1/shares/get-account", input);
 
 
@@ -26,7 +26,7 @@ export const withdrawShares = (input: {accountId: string; amount: ShareMoney; re
 
 // This wrapper requests the current balance separately from account metadata.
 export const getShareBalance = (input: {accountId: string; consistencyStrong: boolean}) =>
-  goApiPost<{balance: ShareMoney}>("/api/v1/shares/balance", input);
+  goApiPost<{balance: ShareMoney; activePledgedAmount: ShareMoney; guarantorAvailableAmount: ShareMoney}>("/api/v1/shares/balance", input);
 
 // This wrapper preserves transaction cursors for account activity pagination.
 export const listShareTransactions = (input: {accountId: string; pageSize: number; pageToken?: string}) =>

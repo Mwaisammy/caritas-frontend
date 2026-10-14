@@ -113,6 +113,7 @@ export interface ListMembersRequest {
   pageSize?: number
   pageToken?: string
   statusFilter?: MemberStatus
+  search?: string
 }
 
 export interface ListMembersResponse {
@@ -220,7 +221,7 @@ export interface CashContributionReceipt {
   receivedAt?: string
   memberId: string
   contributionPeriod: string
-  allocations: (CashAllocationInput & {status: string; authoritativeReferenceId?: string})[]
+  allocations: (CashAllocationInput & {status: string; authoritativeReferenceId?: string; displayLabel?: string})[]
 }
 
 // The status union keeps filters and badges aligned with the share service contract.
@@ -282,7 +283,7 @@ export type RepaymentStatus = "REPAYMENT_STATUS_UNSPECIFIED" | "REPAYMENT_STATUS
 export interface ProposedGuarantor {guarantorId: string; guaranteedAmount: string}
 
 // Loan contains backend data plus optional member display fields supplied by an enriched list response.
-export interface Loan {id: string; memberId: string; memberNumber?: string; memberName?: string; branchId: string; principal: string; outstandingPrincipal?: string; interestRate: string; repaymentPeriodMonths: number; status: LoanStatus; disbursedAt?: string; createdAt: string; updatedAt: string; updatedBy: string; previousStatus: string}
+export interface Loan {id: string; memberId: string; memberNumber?: string; memberName?: string; branchId: string; principal: string; outstandingPrincipal?: string; interestRate: string; repaymentPeriodMonths: number; status: LoanStatus; disbursedAt?: string; createdAt: string; updatedAt: string; updatedBy: string; previousStatus: string; applicantSharePledge?: string; approvedGuarantorCoverage?: string; collateralShortfall?: string}
 
 // LoanGuarantor identifies a guarantee and optionally carries its member-facing labels.
 export interface LoanGuarantor {loanId: string; guarantorId: string; guarantorNumber?: string; guarantorName?: string; guaranteedAmount: string; status: GuarantorStatus; approvedAt?: string; approvedBy: string; createdAt: string}

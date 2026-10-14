@@ -496,40 +496,7 @@ export async function recordCashContributionAction(
     ...item,
     amount: moneyFrom(item.amount),
   }));
-  let posting = false;
   try {
-    const context = await getCashContext();
-    // A committed retry must reach backend idempotency even if the member or targets have since changed state.
-    // Removing this lookup lets frontend eligibility checks block recovery of already received cash.
-    const existing = await getCashReceipt({
-      idempotencyKey: form.data.idempotencyKey,
-    }).catch((error) => {
-      if (error instanceof GoApiError && error.status === 404) return undefined;
-      throw error;
-    });
-    if (!existing?.receipt) {
-      const member = await getMember({
-        branchId: context.branchId,
-        memberId: form.data.memberId,
-      });
-      if (member.member?.status !== "MEMBER_STATUS_ACTIVE")
-        return {
-          ok: false,
-          message: "The member is no longer eligible for contributions.",
-        };
-      if (
-        !(await targetsBelongToMember(
-          form.data.memberId,
-          context.branchId,
-          allocations.data,
-        ))
-      )
-        return {
-          ok: false,
-          message: "Check the selected share, loan, or charge targets.",
-        };
-    }
-    posting = true;
     const result = await createCashContribution({
       ...form.data,
       contributionPeriod: `${form.data.contributionPeriod}-01`,
@@ -549,38 +516,21 @@ export async function recordCashContributionAction(
       };
     const messages = {
       completed: "Cash received and allocations completed.",
+      pending:
+        "Cash received. Allocations are pending and will be retried automatically.",
+      processing: "Cash received. Allocations are being processed.",
       manual_review:
         "Cash was received, but its allocations require manual review.",
     };
-    const member = await getMember({
-      branchId: context.branchId,
-      memberId: result.receipt.memberId,
-    })
-      .then((response) => response.member)
-      .catch(() => undefined);
-    const shareTarget = result.receipt.allocations?.find(
-      (row) => row.type === "CONTRIBUTION_ALLOCATION_TYPE_SHARE_PURCHASE",
-    )?.targetId;
-    const shareBalance =
-      result.receipt.status === "completed" && shareTarget
-        ? await getShareBalance({
-            accountId: shareTarget,
-            consistencyStrong: true,
-          })
-            .then((response) => response.balance)
-            .catch(() => undefined)
-        : undefined;
     return {
       ok: true,
       receipt: result.receipt,
-      member,
-      shareBalance,
       message:
         messages[result.receipt.status as keyof typeof messages] ??
         `Cash receipt returned with status ${result.receipt.status}.`,
     };
   } catch (error) {
-    return failure(error, posting);
+    return failure(error, true);
   }
 }
 
@@ -640,36 +590,48 @@ export async function recoverCashReceiptAction(input: {
   if (!parsed.success)
     return { ok: false, message: "Invalid receipt reference." };
   try {
-    const context = await getCashContext();
     const result = await getCashReceipt(parsed.data);
     if (!result.receipt) return { ok: false, message: "No receipt returned." };
-    const member = await getMember({
-      branchId: context.branchId,
-      memberId: result.receipt.memberId,
-    })
-      .then((response) => response.member)
-      .catch(() => undefined);
-    const shareTarget = result.receipt.allocations?.find(
-      (row) => row.type === "CONTRIBUTION_ALLOCATION_TYPE_SHARE_PURCHASE",
-    )?.targetId;
-    const shareBalance =
-      result.receipt.status === "completed" && shareTarget
-        ? await getShareBalance({
-            accountId: shareTarget,
-            consistencyStrong: true,
-          })
-            .then((response) => response.balance)
-            .catch(() => undefined)
-        : undefined;
     return {
       ok: true,
       receipt: result.receipt,
-      member,
-      shareBalance,
       message: "Cash receipt recovered.",
     };
   } catch (error) {
     return failure(error);
+  }
+}
+
+// loadCashReceiptDetailsAction loads optional display data after the receipt is visible.
+// The receipt lookup scopes member and balance reads to an authorized cash receipt.
+export async function loadCashReceiptDetailsAction(receiptId: string) {
+  if (!z.uuid().safeParse(receiptId).success) return { ok: false as const };
+  try {
+    const [context, result] = await Promise.all([
+      getCashContext(),
+      getCashReceipt({ receiptId }),
+    ]);
+    const receipt = result.receipt;
+    if (!receipt) return { ok: false as const };
+    const shareTarget =
+      receipt.status === "completed"
+        ? receipt.allocations?.find(
+            (row) => row.type === "CONTRIBUTION_ALLOCATION_TYPE_SHARE_PURCHASE",
+          )?.targetId
+        : undefined;
+    const [member, shareBalance] = await Promise.all([
+      getMember({ branchId: context.branchId, memberId: receipt.memberId })
+        .then((response) => response.member)
+        .catch(() => undefined),
+      shareTarget
+        ? getShareBalance({ accountId: shareTarget, consistencyStrong: true })
+            .then((response) => response.balance)
+            .catch(() => undefined)
+        : undefined,
+    ]);
+    return { ok: true as const, member, shareBalance };
+  } catch {
+    return { ok: false as const };
   }
 }
 

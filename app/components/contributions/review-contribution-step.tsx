@@ -73,18 +73,26 @@ export function ReviewContributionStep({
         </div>
         <Separator />
         <div className="flex flex-col gap-2">
-          {draft.allocations.map((item) => (
+          {draft.allocations.map((item) => {
+            const [label, ...reason] = (item.displayLabel || allocationLabel(item.type)).split(" · ");
+            return (
             <div
               className="flex items-center justify-between gap-4"
               key={`${item.type}-${item.targetId ?? "general"}`}
             >
-              <span>
-                {allocationLabel(item.type)}
-                {item.targetId ? ` · ${item.targetId.slice(0, 8)}` : ""}
+              <span className="min-w-0">
+                {label}
+                {reason.length ? (
+                  <mark className="mt-1 block max-w-sm rounded bg-accent px-2 py-1 font-mono text-xs text-accent-foreground wrap-anywhere">
+                    {reason.join(" · ")}
+                  </mark>
+                ) : null}
+                {item.targetId && !item.displayLabel ? ` · ${item.targetId.slice(0, 8)}` : ""}
               </span>
-              <strong>{formatDecimalMoney(item.amount)}</strong>
+              <strong className="shrink-0">{formatDecimalMoney(item.amount)}</strong>
             </div>
-          ))}
+            );
+          })}
         </div>
         {state?.ok === false ? (
           <p className="text-sm text-destructive" role="alert">

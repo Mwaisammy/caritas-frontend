@@ -27,8 +27,6 @@ import {
   relationshipLabel,
 } from "../member-ui";
 import {getShareAccount} from "@/lib/server/shares-api";
-import { getLoan, getLoanStatus } from "@/lib/server/loans-api";
-import { getLoans } from "@/lib/api/loans";
 
 function InfoItem({
   icon: Icon,
@@ -103,7 +101,11 @@ export default async function MemberDetailsPage({
 
   const shareAccount = await getShareAccount({
     branchId: MEMBER_BRANCH_ID,
-    nationalId: member?.nationalId,
+    memberId: member.id,
+  }).catch((error: unknown) => {
+    // Members without a share account must still load so they can open one.
+    if (error instanceof GoApiError && error.status === 404) return null;
+    throw error;
   });
 
   return (
@@ -378,7 +380,7 @@ export default async function MemberDetailsPage({
             <section className="flex flex-col gap-3 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
               <h2 className="font-semibold text-stone-950">Member services</h2>
 
-              {shareAccount.account?.id ? null : (
+              {shareAccount?.account?.id ? null : (
                 <>
                   <OpenAccountDialog member={member} />
                 </>
