@@ -6,6 +6,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { CashContributionFlow } from "./cash-contribution-flow";
 import { CashCustody } from "./cash-custody";
 import { STKContributionFlow } from "./stk-contribution-flow";
+import { DarajaRecovery } from "./daraja-recovery";
 
 // ContributionWorkspace keeps both workflows mounted so changing the method
 // does not discard an open cash flow or a saved M-Pesa request.
@@ -26,6 +27,6 @@ export function ContributionWorkspace() {
       </ToggleGroup>
     </Field>
     <div hidden={method !== "cash"}><div className="flex flex-col gap-6"><CashContributionFlow /><CashCustody /></div></div>
-    <div hidden={method !== "mpesa"}><STKContributionFlow onLockChange={handleStkLock} /></div>
+    <div hidden={method !== "mpesa"}><div className="flex flex-col gap-6"><STKContributionFlow onLockChange={handleStkLock} /><DarajaRecovery /></div></div>
   </div>;
 }

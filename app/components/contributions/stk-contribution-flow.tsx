@@ -35,6 +35,18 @@ export function STKContributionFlow({ onLockChange }: { onLockChange: (locked: b
   const [request, setRequest] = useState<ContributionPaymentRequest | null>(null);
   const [pending, startPayment] = useTransition();
 
+  // Polling reads the saved request only; removing it leaves users waiting on a stale screen.
+  useEffect(() => {
+    if (!saved || request?.receipt?.status === "completed") return;
+    let active = true;
+    const timer = setInterval(async () => {
+      if (!submission.current) return;
+      const result = await checkSTKContributionAction(String(submission.current.get("idempotencyKey")));
+      if (active && result?.ok) { setRequest(result.request); setState(result); }
+    }, 5000);
+    return () => { active = false; clearInterval(timer); };
+  }, [saved, request?.receipt?.status]);
+
   useEffect(() => {
     let active = true;
     loadCashWorkspaceAction().then(async (result) => {
@@ -131,7 +143,7 @@ export function STKContributionFlow({ onLockChange }: { onLockChange: (locked: b
   const checkStatus = () => startPayment(async () => {
     if (!submission.current) return;
     try {
-      const result = await checkSTKContributionAction(String(submission.current.get("idempotencyKey")));
+      const result = await checkSTKContributionAction(String(submission.current.get("idempotencyKey")), true);
       setState(result);
       if (result?.ok) setRequest(result.request);
     } catch {
@@ -145,6 +157,7 @@ export function STKContributionFlow({ onLockChange }: { onLockChange: (locked: b
   const needsReview = receipt?.status === "failed" || receipt?.status === "manual_review";
   const finished = completed || failed || needsReview;
   const title = completed ? "Contribution completed"
+    : request?.recoveryStatus === "received_needs_receipt" ? "M-Pesa confirms payment. Receipt needs reconciliation"
     : needsReview ? "Payment received. Contribution needs review"
     : receipt ? "Payment received. Processing contribution"
     : failed ? "Payment request unsuccessful"
@@ -169,6 +182,7 @@ export function STKContributionFlow({ onLockChange }: { onLockChange: (locked: b
               : needsReview ? "Contact staff to reconcile the received money before requesting payment again."
               : failed ? request?.failureReason || "Check whether money was deducted before starting another payment."
               : receipt ? "The backend is applying the received money to the contribution. Check again for the final outcome."
+              : request?.recoveryStatus === "received_needs_receipt" ? "Staff must verify the receipt against business records. Do not send another payment."
               : "Complete the M-Pesa prompt on the phone, then check status. A delay does not mean the payment failed."}</AlertDescription>
           </Alert>
         </div>
