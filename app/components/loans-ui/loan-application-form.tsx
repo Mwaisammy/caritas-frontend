@@ -52,10 +52,10 @@ export function LoanApplicationForm({member}: {member: Member}) {
         </FieldSet>
       </section>
       <Alert>
-        <AlertTitle>Guarantor share limit: 30%</AlertTitle>
+        <AlertTitle>Available guarantor shares</AlertTitle>
         <AlertDescription>
-          <p>A guarantor can offer 30% of their current share balance, less all active pledges. For example, KES 10,000 in shares with KES 1,000 already pledged leaves KES 2,000 available to guarantee.</p>
-          <p>Applicant security plus proposed guarantees must cover the principal. Guarantees count toward loan approval only after approval reserves their shares. Applicant eligibility also requires share purchases in at least six different months.</p>
+          <p>A guarantor can offer their current shares minus all active pledges. For example, KES 10,000 in shares with KES 1,000 already pledged leaves KES 9,000 available to guarantee.</p>
+          <p>Applicant security plus proposed guarantees must cover the principal. Guarantees count toward loan approval only after approval reserves their shares.</p>
         </AlertDescription>
       </Alert>
       <section className="flex flex-col gap-5 rounded-2xl border bg-card p-5 sm:p-6">

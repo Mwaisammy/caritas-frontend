@@ -22,6 +22,8 @@ export function GuarantorFields({applicantId, disabled, required = false, state}
   state: LoanActionState;
 }) {
   const id = useId();
+  // Keep search results inside the dialog; a body portal sits behind its overlay.
+  const popupContainer = useRef<HTMLDivElement>(null);
   const amountInput = useRef<HTMLInputElement>(null);
   const [search, setSearch] = useState("");
   const [result, setResult] = useState<Awaited<ReturnType<typeof searchGuarantorMembersAction>> | null>(null);
@@ -68,7 +70,7 @@ export function GuarantorFields({applicantId, disabled, required = false, state}
 
   const members = result?.ok ? result.members.filter((member) => member.id !== applicantId) : [];
   return (
-    <FieldGroup>
+    <FieldGroup ref={popupContainer}>
       <input name="guarantorId" type="hidden" value={selected?.id ?? ""} />
       <Field data-disabled={disabled}>
         <FieldLabel htmlFor={`${id}-member`}>Guarantor name or membership number</FieldLabel>
@@ -94,7 +96,7 @@ export function GuarantorFields({applicantId, disabled, required = false, state}
               {searching ? <LoaderCircle className="animate-spin" /> : <ChevronDown />}
             </Combobox.Trigger>
           </div>
-          <Combobox.Portal>
+          <Combobox.Portal container={popupContainer}>
             <Combobox.Positioner sideOffset={4}>
               <Combobox.Popup className="max-h-72 w-(--anchor-width) overflow-y-auto rounded-lg border bg-popover p-1 text-popover-foreground shadow-md">
                 <Combobox.Empty className="p-3 text-sm text-muted-foreground">
@@ -121,7 +123,7 @@ export function GuarantorFields({applicantId, disabled, required = false, state}
         <FieldDescription role="status">
           Shares: {formatLoanMoney(shareMoneyDecimal(security.balance))}. Already pledged: {formatLoanMoney(shareMoneyDecimal(security.activePledgedAmount))}.
           <strong className="block">Can guarantee up to {formatLoanMoney(available ?? "0")} now.</strong>
-          This is 30% of their current shares minus all active pledges. Capacity is checked again at approval.
+          This is their current shares minus all active pledges. Capacity is checked again at approval.
         </FieldDescription>
       ) : null}
       <Field data-disabled={disabled} data-invalid={overLimit}>

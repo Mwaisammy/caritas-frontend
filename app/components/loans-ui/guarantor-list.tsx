@@ -1,10 +1,11 @@
 "use client";
 
-import {useActionState} from "react";
+import {useActionState, useState} from "react";
 import Link from "next/link";
 import {ArrowRight, LoaderCircle, Plus, ShieldCheck, Trash2} from "lucide-react";
 
 import {addGuarantorAction, approveGuarantorAction, removeGuarantorAction} from "@/app/dashboard/loans/actions";
+import type {LoanActionState} from "@/app/dashboard/loans/actions";
 import type {Loan, LoanGuarantor} from "@/lib/go-api-client";
 import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
 import {Button} from "@/components/ui/button";
@@ -31,23 +32,37 @@ function GuarantorButton({loanId, guarantorId, kind}: {loanId: string; guarantor
   );
 }
 
+// AddGuarantorForm owns submission state so unmounting on close clears errors
+// along with the fields; keeping it in the dialog would preserve old feedback.
+function AddGuarantorForm({loan, onAdded}: {loan: Loan; onAdded: () => void}) {
+  const [state, action, pending] = useActionState(async (previous: LoanActionState, formData: FormData) => {
+    const result = await addGuarantorAction(previous, formData);
+    if (!result?.ok) return result;
+    onAdded();
+    return null;
+  }, null);
+  return (
+    <form action={action} className="flex flex-col gap-4">
+      <input name="loanId" type="hidden" value={loan.id} />
+      <GuarantorFields applicantId={loan.memberId} disabled={pending} required state={state} />
+      <LoanFeedback state={state} />
+      <Button type="submit" disabled={pending}>{pending ? <LoaderCircle className="animate-spin" data-icon="inline-start" /> : <Plus data-icon="inline-start" />}Add guarantor</Button>
+    </form>
+  );
+}
+
 // AddGuarantorDialog reuses the application capacity check so new guarantees follow the same rules.
 function AddGuarantorDialog({loan}: {loan: Loan}) {
-  const [state, action, pending] = useActionState(addGuarantorAction, null);
+  const [open, setOpen] = useState(false);
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button variant="outline" />}><Plus data-icon="inline-start" />Add guarantor</DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Add guarantor</DialogTitle>
-          <DialogDescription>Can offer up to 30% of current shares minus all active pledges. Shares are reserved when the guarantee is approved.</DialogDescription>
+          <DialogDescription>A guarantor can offer their current shares minus all active pledges. Shares are reserved when the guarantee is approved.</DialogDescription>
         </DialogHeader>
-        <form action={action} className="flex flex-col gap-4">
-          <input name="loanId" type="hidden" value={loan.id} />
-          <GuarantorFields applicantId={loan.memberId} disabled={pending} required state={state} />
-          <LoanFeedback state={state} />
-          <Button type="submit" disabled={pending}>{pending ? <LoaderCircle className="animate-spin" data-icon="inline-start" /> : <Plus data-icon="inline-start" />}Add guarantor</Button>
-        </form>
+        {open ? <AddGuarantorForm loan={loan} onAdded={() => setOpen(false)} /> : null}
       </DialogContent>
     </Dialog>
   );
@@ -77,7 +92,7 @@ export function GuarantorList({loan, guarantors, nextHref}: {loan: Loan; guarant
           </AlertDescription>
         </Alert>
       ) : null}
-      <p className="text-sm text-muted-foreground">Guarantor limit: 30% of their current shares, minus all active pledges. Approval reserves the guaranteed amount.</p>
+      <p className="text-sm text-muted-foreground">A guarantor can offer their current shares minus all active pledges. Approval reserves the guaranteed amount.</p>
       {guarantors.length ? guarantors.map((item) => (
         <div key={item.guarantorId} className="flex flex-col gap-3 rounded-xl border p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
