@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { randomUUID } from "node:crypto";
 import { createAdjustmentAction, withdrawSharesAction } from "@/app/dashboard/shares/actions";
-import { ArrowLeft } from "lucide-react";
+import { ArrowDownToLine, ArrowLeft, Link2Icon } from "lucide-react";
 
 import type { ShareAccount } from "@/lib/go-api-client";
 import { CreateAdjustmentDialog } from "./create-adjustment-dialog";
 import { PurchaseSharesDialog } from "./purchase-shares-dialog";
 import { ShareAccountBadge } from "./share-badges";
 import { WithdrawSharesDialog } from "./withdraw-shares-dialog";
+import { Button } from "@/components/ui/button";
 
 // ShareAccountHeader keeps account identity and its three primary actions visible together.
 export function ShareAccountHeader({ account }: { account: ShareAccount }) {
@@ -39,7 +40,15 @@ export function ShareAccountHeader({ account }: { account: ShareAccount }) {
           </p>
         </div>
         <div className="flex flex-wrap gap-2 rounded-xl bg-white p-2 text-stone-950">
-          <PurchaseSharesDialog accountId={account.id} />
+          {/* <PurchaseSharesDialog accountId={account.id} /> */}
+
+          <Link
+          href={`/dashboard/contributions`}
+           className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#a91521] px-4 text-sm font-semibold text-white hover:bg-[#8d111c]"
+        
+        type="button">
+           <ArrowDownToLine className="size-4" />
+          Purchase</Link>
           <WithdrawSharesDialog
             key={withdrawalReference}
             accountId={account.id}

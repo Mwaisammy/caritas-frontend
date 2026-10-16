@@ -1,4 +1,5 @@
 import { HandCoins } from "lucide-react";
+import Link from "next/link";
 
 export function LoansWelcome() {
   return (
@@ -13,16 +14,20 @@ export function LoansWelcome() {
         </p>
       </div>
 
-      <div className="absolute right-48 top-1/2 hidden -translate-y-1/2 opacity-40 md:block">
+      <div className="absolute right-10 top-1/2 hidden -translate-y-1/2 opacity-40 md:block">
         <div className="flex h-28 w-28 items-center justify-center rounded-full bg-[#fff1f2]">
           <HandCoins size={70} className="text-[#c51f25]" />
         </div>
       </div>
 
-      <button className="absolute right-6 top-1/2 flex -translate-y-1/2 items-center gap-2 rounded-lg bg-[#c51f25] px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#aa1b20]">
-        <span className="text-xl">+</span>
-        New Loan
-      </button>
+    {/* <Link
+  href="/dashboard/members"
+  className="absolute right-6 top-1/2 flex -translate-y-1/2 cursor-pointer items-center gap-2 rounded-lg bg-[#c51f25] px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#aa1b20]"
+>
+  <span className="text-xl">+</span>
+  New Loan
+</Link> */}
+
     </section>
   );
 }

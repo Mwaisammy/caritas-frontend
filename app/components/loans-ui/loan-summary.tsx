@@ -1,4 +1,4 @@
-import { CalendarDays, Clock3, Percent, WalletCards } from "lucide-react";
+import { CalendarDays, Clock3, Wallet, WalletCards } from "lucide-react";
 
 import type { Loan } from "@/lib/go-api-client";
 import { formatLoanDate, formatLoanMoney, loanLabel } from "./loan-badges";
@@ -22,9 +22,9 @@ export function LoanSummary({
     },
     {
       label: "Interest rate",
-      value: `${loan.interestRate}%`,
-      detail: "Backend percentage rate",
-      icon: Percent,
+      value: `${(Number(loan.interestRate))}%`,
+      detail: "Annual percentage rate",
+      icon: Wallet,
     },
     {
       label: "Repayment term",
