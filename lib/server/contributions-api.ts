@@ -9,6 +9,7 @@ import type {
   CashContext,
   CashDeposit,
   ContributionPaymentRequest,
+  DarajaPayment,
 } from "@/lib/go-api-client";
 import { goApiGet, goApiPost } from "@/lib/server/go-api";
 
@@ -24,7 +25,17 @@ export const initiateDarajaContribution = (input: {
 
 // getContributionPaymentRequest recovers a lost initiation response without sending another prompt.
 export const getContributionPaymentRequest = async (idempotencyKey: string) =>
-  (await goApiGet(`/api/v1/contributions/payment-request?idempotency_key=${encodeURIComponent(idempotencyKey)}`)) as ContributionPaymentRequest;
+  (await goApiGet(`/api/v1/contributions/payment-request?${new URLSearchParams({ idempotencyKey })}`)) as ContributionPaymentRequest;
+
+// listDarajaPayments restores work independently of browser storage; without it staff cannot find abandoned requests.
+export const listDarajaPayments = async (pageToken = "") =>
+  (await goApiGet(`/api/v1/contributions/daraja-payments?${new URLSearchParams({ pageToken })}`)) as { payments: DarajaPayment[]; nextPageToken?: string };
+
+// recoverDarajaPayment sends recovery instructions to the original request; no recovery action initiates a debit.
+export const recoverDarajaPayment = (input: {
+  paymentRequestId: string; action: string; checkoutRequestId?: string; mpesaReference?: string;
+  amount?: ShareMoney; receivedAt?: string; evidence?: string; reason?: string;
+}) => goApiPost<{ payment: ContributionPaymentRequest }>("/api/v1/contributions/recover-daraja", input);
 
 // openCashierSession opens a till or returns the authenticated cashier's existing open till.
 export const openCashierSession = () =>
