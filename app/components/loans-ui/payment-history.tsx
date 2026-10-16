@@ -31,8 +31,8 @@ export function PaymentHistory({
                 <th className="px-6 py-3">Date</th>
                 <th className="px-6 py-3">Type</th>
                 <th className="px-6 py-3">Amount</th>
-                <th className="px-6 py-3">Reference</th>
-                <th className="px-6 py-3">Gateway ID</th>
+                {/* <th className="px-6 py-3">Reference</th>
+                <th className="px-6 py-3">Gateway ID</th> */}
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -45,12 +45,12 @@ export function PaymentHistory({
                   <td className="px-6 py-4 font-semibold">
                     {formatLoanMoney(item.amount)}
                   </td>
-                  <td className="max-w-48 break-all px-6 py-4 font-mono text-xs">
+                  {/* <td className="max-w-48 break-all px-6 py-4 font-mono text-xs">
                     {item.referenceId || "—"}
                   </td>
                   <td className="max-w-48 break-all px-6 py-4 font-mono text-xs">
                     {item.paymentGatewayTransactionId || "—"}
-                  </td>
+                  </td> */}
                 </tr>
               ))}
             </tbody>

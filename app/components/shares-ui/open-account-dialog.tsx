@@ -1,17 +1,28 @@
 "use client";
 
-import { useActionState, useRef } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import Link from "next/link";
 import type { Member } from "@/lib/go-api-client";
 import { LoaderCircle, Plus, X } from "lucide-react";
 
 import { openShareAccountAction } from "@/app/dashboard/shares/actions";
+import { toast } from "@/components/ui/toast";
 import { ShareFeedback, ShareFieldError } from "./form-parts";
+import { useRouter } from "next/navigation";
 
 // OpenAccountDialog isolates the only client state needed to launch account creation.
 export function OpenAccountDialog({ member }: { member?: Member }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const router = useRouter();
   const [state, action, pending] = useActionState(openShareAccountAction, null);
+
+  useEffect(() => {
+    if (!state?.ok || !state.accountId) return;
+    dialogRef.current?.close();
+    toast.add({ title: "Redirecting to your account", type: "success" });
+    router.push(`/dashboard/shares/${encodeURIComponent(state.accountId)}`);
+  }, [state, router]);
+
   if (!member)
     return (
       <Link
