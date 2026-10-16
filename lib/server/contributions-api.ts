@@ -24,7 +24,7 @@ export const initiateDarajaContribution = (input: {
 
 // getContributionPaymentRequest recovers a lost initiation response without sending another prompt.
 export const getContributionPaymentRequest = async (idempotencyKey: string) =>
-  (await goApiGet(`/api/v1/contributions/payment-requests/by-idempotency-key/${encodeURIComponent(idempotencyKey)}`)) as ContributionPaymentRequest;
+  (await goApiGet(`/api/v1/contributions/payment-request?idempotency_key=${encodeURIComponent(idempotencyKey)}`)) as ContributionPaymentRequest;
 
 // openCashierSession opens a till or returns the authenticated cashier's existing open till.
 export const openCashierSession = () =>

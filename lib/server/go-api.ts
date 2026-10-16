@@ -71,7 +71,8 @@ export async function goApiPost<T>(
         "X-Request-ID": requestId,
       },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(10_000),
+      // STK initiation allows 45s for Daraja and 15s to persist its checkout ID.
+      signal: AbortSignal.timeout(path === "/api/v1/contributions/initiate-daraja-stk" ? 75_000 : 10_000),
     });
   } catch (error) {
     const status =
