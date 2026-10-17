@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import {revalidatePath, updateTag} from "next/cache";
 
 import type {
   CashAllocationInput,
@@ -516,6 +517,10 @@ export async function recordCashContributionAction(
         message:
           "The receipt could not be confirmed. Check or retry the same contribution.",
       };
+    if (result.receipt.status === "completed") {
+      updateTag("loan-directory");
+      revalidatePath("/dashboard/loans", "layout");
+    }
     const messages = {
       completed: "Cash received and allocations completed.",
       pending:
@@ -594,6 +599,10 @@ export async function recoverCashReceiptAction(input: {
   try {
     const result = await getCashReceipt(parsed.data);
     if (!result.receipt) return { ok: false, message: "No receipt returned." };
+    if (result.receipt.status === "completed") {
+      updateTag("loan-directory");
+      revalidatePath("/dashboard/loans", "layout");
+    }
     return {
       ok: true,
       receipt: result.receipt,

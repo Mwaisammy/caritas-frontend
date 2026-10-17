@@ -120,3 +120,10 @@ export async function manageCreditAction(data: FormData) {
     };
   }
 }
+
+// getCreditOperationsAction exposes authorized credit history without letting the browser infer reservations.
+export async function getCreditOperationsAction(creditBalanceId: string, pageToken = "") {
+  if (!z.uuid().safeParse(creditBalanceId).success || typeof pageToken !== "string") return {ok: false as const, message: "Invalid credit reference."};
+  try { return {ok: true as const, ...await listCreditOperations(creditBalanceId, pageToken)}; }
+  catch { return {ok: false as const, message: "Credit activity could not be loaded. Please retry."}; }
+}

@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
 import { BanknoteIcon, PrinterIcon, UserRoundPlusIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -193,6 +194,11 @@ export function ReceiptStep({
               >
                 <span className="min-w-0">
                   {label}
+                  {item.type === "CONTRIBUTION_ALLOCATION_TYPE_LOAN_PRINCIPAL" && item.targetId ? (
+                    <Link className="mt-1 block text-xs underline" href={`/dashboard/loans/${item.targetId}`} target="_blank" rel="noreferrer">
+                      {completed ? "View remaining balance, interest and payment split" : "View loan — repayment is not yet confirmed posted"}
+                    </Link>
+                  ) : null}
                   {reason.length ? (
                     <mark className="mt-1 block max-w-sm rounded bg-accent px-2 py-1 font-mono text-xs text-accent-foreground wrap-anywhere">
                       {reason.join(" · ")}

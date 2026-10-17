@@ -7,6 +7,13 @@ export function loanMoneyUnits(value: string) {
   return BigInt(units) * BigInt(10_000) + BigInt(fraction.padEnd(4, "0"));
 }
 
+// formatLoanRate translates the stored monthly fraction into the percentage officers entered.
+export function formatLoanRate(value: string) {
+  const rate = loanMoneyUnits(value);
+  if (rate === null) return "—";
+  return `${rate / BigInt(100)}.${(rate % BigInt(100)).toString().padStart(2, "0")}%`;
+}
+
 // shareMoneyDecimal preserves protobuf money precision when displaying the backend's guarantee allowance.
 export function shareMoneyDecimal(value: ShareMoney) {
   const scaled = (BigInt(value.units || "0") * BigInt(1_000_000_000) + BigInt(value.nanos || 0)) / BigInt(100_000);

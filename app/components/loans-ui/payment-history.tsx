@@ -18,7 +18,7 @@ export function PaymentHistory({
         <div>
           <h2 className="font-semibold">Payment history</h2>
           <p className="mt-1 text-xs text-stone-500">
-            Most recent ledger entries returned by the service
+            Every payment shows its principal, interest, penalty and overpayment allocation.
           </p>
         </div>
         <ReceiptText className="size-5 text-stone-400" />
