@@ -1,22 +1,124 @@
 "use server";
 
-import {revalidatePath} from "next/cache";
-import {headers} from "next/headers";
-import {z} from "zod";
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import {
+  getCreditBalance,
+  listCreditOperations,
+  manageCredit,
+} from "@/lib/server/credits-api";
+import { getCashContext } from "@/lib/server/contributions-api";
+import { GoApiError } from "@/lib/server/go-api";
+import { getLoan, listLoans } from "@/lib/server/loans-api";
 
-import {auth} from "@/lib/auth";
-import {listCreditOperations, requestCreditWithdrawal} from "@/lib/server/credits-api";
-import {GoApiError} from "@/lib/server/go-api";
-import {getLoan} from "@/lib/server/loans-api";
-import type {LoanActionState} from "./actions";
+// loadCreditWorkspaceAction restores availability and reservations; without it a refreshed page could offer reserved money again.
+export async function loadCreditWorkspaceAction(
+  loanId: string,
+  creditBalanceId: string,
+  pageToken = "",
+) {
+  if (
+    !z.uuid().safeParse(loanId).success ||
+    !z.uuid().safeParse(creditBalanceId).success
+  )
+    return { ok: false as const, message: "Invalid credit reference." };
+  try {
+    const { loan } = await getLoan({ loanId });
+    if (!loan) return { ok: false as const, message: "Loan not found." };
+    const [context, credits, history, loans] = await Promise.all([
+      getCashContext(),
+      getCreditBalance({ memberId: loan.memberId }),
+      listCreditOperations(creditBalanceId, pageToken),
+      listLoans({ memberId: loan.memberId, pageSize: 100 }),
+    ]);
+    const credit = credits.credits.find((row) => row.id === creditBalanceId);
+    if (!credit) return { ok: false as const, message: "Credit not found." };
+    return {
+      ok: true as const,
+      context,
+      credit,
+      ...history,
+      loans: loans.loans.filter((row) =>
+        [
+          "LOAN_STATUS_ACTIVE",
+          "LOAN_STATUS_DELINQUENT",
+          "LOAN_STATUS_RESTRUCTURING",
+        ].includes(row.status),
+      ),
+    };
+  } catch {
+    return {
+      ok: false as const,
+      message: "Unable to load credit availability and history.",
+    };
+  }
+}
 
-// requestCreditWithdrawalAction uses the credit owner's member ID required by the backend contract.
-export async function requestCreditWithdrawalAction(_state: LoanActionState, formData: FormData): Promise<LoanActionState> {
-  const parsed = z.object({loanId: z.uuid(), creditBalanceId: z.uuid(), amount: z.string().trim().regex(/^\d+(\.\d{1,2})?$/).refine((value) => Number(value) > 0, "Enter an amount greater than zero."), reason: z.string().trim().min(5), idempotencyKey: z.uuid(), consentReference: z.string().trim().min(5)}).safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return {ok: false, message: "Check the withdrawal details.", fieldErrors: parsed.error.flatten().fieldErrors};
-  const session = await auth.api.getSession({headers: await headers()}); if (!session?.user.id) return {ok: false, message: "Your session has expired."};
-  try { const loan = (await getLoan({loanId: parsed.data.loanId})).loan; if (!loan) return {ok: false, message: "The loan could not be found."}; await requestCreditWithdrawal({creditBalanceId: parsed.data.creditBalanceId, amount: parsed.data.amount, reason: parsed.data.reason, requestedBy: loan.memberId, idempotencyKey: parsed.data.idempotencyKey, consentReference: parsed.data.consentReference}); revalidatePath(`/dashboard/loans/${parsed.data.loanId}`); revalidatePath("/dashboard/loans"); return {ok: true, message: "Refund requested. Funds are reserved pending independent approval and recorded payout."}; }
-  catch (error) { if (error instanceof GoApiError) return {ok: false, message: `The request was not submitted. Reference: ${error.requestId}`}; console.error("Unexpected credit withdrawal failure", error); return {ok: false, message: "Something went wrong. Please try again."}; }
+// manageCreditAction preserves an operation ID and member instruction; without it a retry can become a second reservation.
+export async function manageCreditAction(data: FormData) {
+  const parsed = z
+    .object({
+      loanId: z.uuid(),
+      operationId: z.uuid(),
+      creditBalanceId: z.uuid(),
+      action: z.enum([
+        "transfer_shares",
+        "apply_loan",
+        "request_refund",
+        "approve_refund",
+        "reject_refund",
+        "record_refund",
+      ]),
+      amount: z
+        .string()
+        .regex(/^(0|[1-9]\d{0,9})(\.\d{1,2})?$/)
+        .optional(),
+      targetId: z.uuid().optional(),
+      contributionPeriod: z
+        .string()
+        .regex(/^\d{4}-(0[1-9]|1[0-2])$/)
+        .optional(),
+      reason: z.string().trim().min(5),
+      consentReference: z.string().trim().optional(),
+      payoutReference: z.string().trim().optional(),
+      payoutEvidence: z.string().trim().optional(),
+    })
+    .safeParse(Object.fromEntries(data));
+  if (!parsed.success)
+    return {
+      ok: false as const,
+      definitive: true,
+      message: "Check the amount, reason and credit instructions.",
+    };
+  try {
+    const { loanId, ...input } = parsed.data;
+    const operation = await manageCredit({
+      ...input,
+      contributionPeriod: input.contributionPeriod
+        ? `${input.contributionPeriod}-01`
+        : undefined,
+    });
+    revalidatePath(`/dashboard/loans/${loanId}`);
+    return {
+      ok: true as const,
+      message:
+        operation.status === "pending"
+          ? "Refund amount reserved for independent approval."
+          : `Credit operation ${operation.status}.`,
+      operation,
+    };
+  } catch (error) {
+    return {
+      ok: false as const,
+      definitive:
+        error instanceof GoApiError && [3, 5, 7, 9].includes(error.code ?? 0),
+      message:
+        error instanceof GoApiError
+          ? (error.detail ??
+            `Outcome unconfirmed. Refresh history before retrying. Reference: ${error.requestId}`)
+          : "Outcome unconfirmed. Refresh history before retrying.",
+    };
+  }
 }
 
 // getCreditOperationsAction exposes authorized credit history without letting the browser infer reservations.

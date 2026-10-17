@@ -1,8 +1,4 @@
-import type {Loan} from "@/lib/go-api-client";
-import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
-import {Badge} from "@/components/ui/badge";
-import {Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle} from "@/components/ui/card";
-import {formatLoanDate, formatLoanMoney, formatLoanRate, loanMoneyUnits} from "./loan-badges";
+import { CalendarDays, Clock3, Wallet, WalletCards } from "lucide-react";
 
 // LoanSummary separates debt, payment allocations and member credit; original principal is never presented as the balance.
 export function LoanSummary({loan}: {loan: Loan}) {
@@ -13,6 +9,44 @@ export function LoanSummary({loan}: {loan: Loan}) {
   nextMonth?.setUTCMonth(nextMonth.getUTCMonth() + 1);
   const nextMonthLabel = nextMonth?.toLocaleDateString("en-KE", {month: "long", year: "numeric", timeZone: "Africa/Nairobi"});
 
+// LoanSummary exposes authoritative terms and lifecycle dates before administrators take action.
+export function LoanSummary({
+  loan,
+  previousStatus,
+  lastUpdated,
+}: {
+  loan: Loan;
+  previousStatus: string;
+  lastUpdated: string;
+}) {
+  const cards = [
+    {
+      label: "Principal",
+      value: formatLoanMoney(loan.principal),
+      detail: "Original requested amount",
+      icon: WalletCards,
+    },
+    {
+      label: "Interest rate",
+      value: `${(Number(loan.interestRate))}%`,
+      detail: "Annual percentage rate",
+      icon: Wallet,
+    },
+    {
+      label: "Repayment term",
+      value: `${loan.repaymentPeriodMonths} months`,
+      detail: `Applied ${formatLoanDate(loan.createdAt)}`,
+      icon: Clock3,
+    },
+    {
+      label: "Last status change",
+      value: formatLoanDate(lastUpdated, true),
+      detail: previousStatus
+        ? `From ${loanLabel(previousStatus)}`
+        : "No previous status",
+      icon: CalendarDays,
+    },
+  ];
   return (
     <section className="flex flex-col gap-5" aria-label="Loan balances and interest">
       {financial && loan.disbursedAt ? (

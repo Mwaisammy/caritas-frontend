@@ -307,7 +307,7 @@ export interface LoanFinancialSummary {
 export interface LoanGuarantor {loanId: string; guarantorId: string; guarantorNumber?: string; guarantorName?: string; guaranteedAmount: string; status: GuarantorStatus; approvedAt?: string; approvedBy: string; createdAt: string}
 
 // CreditBalance describes withdrawable or restricted overpayment credit returned by the backend.
-export interface CreditBalance {id: string; memberId: string; loanId?: string; amount: string; availableAmount?: string; reservedAmount?: string; usedAmount?: string; source: string; status: CreditStatus; createdAt: string; lastActivityAt: string}
+export interface CreditBalance {id: string; memberId: string; loanId?: string; amount: string; availableAmount: string; reservedAmount: string; usedAmount: string; source: string; status: CreditStatus; createdAt: string; lastActivityAt: string}
 
 // RepaymentSchedule represents one authoritative installment in the loan schedule.
 export interface RepaymentSchedule {id: string; loanId: string; installmentNo: number; dueDate: string; amountDue: string; status: RepaymentStatus}
@@ -321,7 +321,7 @@ export type ContributionCharge = {
  outstanding: ShareMoney; reason: string; createdAt: string
 }
 // CashContext comes from backend authorization; removing it makes branch and action availability guesses.
-export type CashContext = {staffId: string; branchId: string; canRecord: boolean; canApprove: boolean}
+export type CashContext = {staffId: string; branchId: string; canRecord: boolean; canApprove: boolean; canApproveCredit: boolean}
 
 // PaymentRequestStatus distinguishes prompt/payment state from receipt processing.
 export type PaymentRequestStatus =
@@ -338,6 +338,8 @@ export type ContributionPaymentRequest = {
   contributionPeriod?: string;
   createdAt?: string;
   failureReason?: string;
+  checkoutRequestId?: string;
+  recoveryStatus?: string;
   receipt?: {
     id: string;
     status: string;
@@ -345,6 +347,20 @@ export type ContributionPaymentRequest = {
     mpesaReference?: string;
     receivedAt?: string;
   };
+};
+
+// DarajaPayment exposes unresolved requests across sessions; removing it hides recovery work.
+export type DarajaPayment = {
+  paymentRequestId: string; memberId: string; checkoutRequestId?: string; amount: ShareMoney;
+  status: string; recoveryStatus: string; receiptStatus?: string; mpesaReference?: string;
+  lastError?: string; providerResult?: string; createdAt: string;
+};
+
+// CreditOperation explains reservations and completed uses so available money is auditable.
+export type CreditOperation = {
+  id: string; creditBalanceId: string; amount: string; action: string; targetId?: string;
+  status: string; reason: string; consentReference: string; requestedBy: string;
+  payoutReference?: string; createdAt: string;
 };
 // CashDeposit carries bank evidence and custody links; removing these facts prevents independent verification.
 export type CashDeposit = {

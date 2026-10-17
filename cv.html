@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Samuel Mwai - Resume</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Times+New+Roman&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Times New Roman', serif;
+            line-height: 1.4;
+            color: #000;
+            background: white;
+            font-size: 11pt;
+        }
+        
+        .container {
+            max-width: 8.5in;
+            margin: 0 auto;
+            padding: 0.5in;
+            min-height: 11in;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .name {
+            font-size: 20pt;
+            font-weight: bold;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+        }
+        
+        .contact {
+            font-size: 10pt;
+            margin-bottom: 10px;
+        }
+        
+        .section-title {
+            font-size: 16pt;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0 10px 0;
+            border-bottom: 1px solid #000;
+            padding-bottom: 2px;
+        }
+        
+        .experience-item, .project-item {
+            margin-bottom: 15px;
+        }
+        
+        .company {
+            font-weight: bold;
+            font-size: 11pt;
+        }
+        
+        .position {
+            font-style: italic;
+            font-size: 10pt;
+        }
+        
+        .location-date {
+            float: right;
+            font-size: 10pt;
+        }
+        
+        .project-name {
+            font-weight: bold;
+            font-size: 11pt;
+        }
+        
+        .project-tech {
+            font-size: 10pt;
+        }
+        
+        .clearfix::after {
+            content: "";
+            display: table;
+            clear: both;
+        }
+        
+        ul {
+            margin-left: 20px;
+            margin-top: 3px;
+        }
+        
+        li {
+            margin-bottom: 2px;
+            font-size: 10pt;
+        }
+        
+        .skills {
+            text-align: center;
+            font-size: 10pt;
+            line-height: 1.3;
+        }
+        
+        .education-item {
+            margin-bottom: 8px;
+        }
+        
+        .university {
+            font-weight: bold;
+            font-size: 11pt;
+        }
+        
+        .degree {
+            font-style: italic;
+            font-size: 10pt;
+        }
+        
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            .container {
+                padding: 0.5in;
+                max-width: none;
+            }
+        }
+        
+        .download-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            z-index: 1000;
+        }
+        
+        .download-btn:hover {
+            background: #0056b3;
+        }
+        
+        @media print {
+            .download-btn {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="download-btn" onclick="downloadPDF()">Download PDF</button>
+    
+    <div class="container">
+        <div class="header">
+            <div class="name">SAMUEL MWAI</div>
+            <div class="contact">
+                P.O Box 1004, Karatina, 10101, Nyeri • 0115450287 • mwaisamuel432@gmail.com<br>
+                https://github.com/Mwaisammy
+            </div>
+        </div>
+
+        <div class="section-title">Experience</div>
+        
+        <div class="experience-item clearfix">
+            <div class="company">Teach2Give</div>
+            <div class="location-date">Nairobi, Kenya<br>Apr. 2025 – Jul. 2025</div>
+            <div class="position">QA/QE Trainee</div>
+            <ul>
+                <li>Learned and applied software testing principles including manual and automated testing</li>
+                <li>Performed functional, regression, and integration testing for web applications</li>
+                <li>Gained hands-on experience in identifying, documenting, and tracking software defects</li>
+                <li>Assisted in end-to-end fullstack development tasks including frontend and backend contributions</li>
+                <li>Collaborated with development teams to ensure product quality and compliance with specifications</li>
+            </ul>
+        </div>
+
+        <div class="section-title">Projects</div>
+        
+        <div class="project-item">
+            <div class="project-name">LinkedIn Clone App <span class="project-tech">(React.js, CSS, Firebase)</span></div>
+            <ul>
+                <li>Developed a functional LinkedIn clone with authentication and authorization features</li>
+                <li>Implemented real-time updates for posts and user interactions</li>
+            </ul>
+        </div>
+        
+        <div class="project-item">
+            <div class="project-name">Gmail Clone App <span class="project-tech">(React.js, Firebase)</span></div>
+            <ul>
+                <li>Built a Gmail-like email system enabling users to compose and update emails in real time</li>
+                <li>Integrated user authentication and secure data storage</li>
+            </ul>
+        </div>
+        
+        <div class="project-item">
+            <div class="project-name">Hotel Management System <span class="project-tech">(Fullstack)</span></div>
+            <ul>
+                <li>Developed during Teach2Give training with features for booking management and room availability tracking</li>
+                <li>Integrated frontend and backend for seamless operation</li>
+            </ul>
+        </div>
+        
+        <div class="project-item">
+            <div class="project-name">Sushi Website <span class="project-tech">(HTML, CSS, JavaScript)</span></div>
+            <ul>
+                <li>Designed an interactive landing page for a Japanese restaurant with responsive design and engaging animations</li>
+            </ul>
+        </div>
+
+        <div class="section-title">Skills</div>
+        <div class="skills">
+            Java, Python, JavaScript, C++, HTML, CSS, React, MySQL, MongoDB, Git, Visual Studio Code, IntelliJ IDEA, Manual Testing, Regression Testing, Integration Testing, Defect Tracking, Agile Development
+        </div>
+
+        <div class="section-title">Education</div>
+        <div class="education-item clearfix">
+            <div class="university">Meru University of Science and Technology</div>
+            <div class="location-date">Meru, Kenya<br>Expected Apr. 2026</div>
+            <div class="degree">Bachelor of Science in Computer Science</div>
+            <ul>
+                <li>Coursework: Introduction to Programming, Data Structures and Algorithms, Object-Oriented Programming, Web Development, Database Management Systems</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function downloadPDF() {
+            // Hide the download button temporarily
+            const btn = document.querySelector('.download-btn');
+            btn.style.display = 'none';
+            
+            // Use the browser's print functionality to save as PDF
+            window.print();
+            
+            // Show the button again after a short delay
+            setTimeout(() => {
+                btn.style.display = 'block';
+            }, 1000);
+        }
+    </script>
+</body>
+</html>

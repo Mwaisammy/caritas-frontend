@@ -37,6 +37,8 @@ function InfoItem({
   label: string;
   value?: React.ReactNode;
 }) {
+
+  
   return (
     <div className="flex gap-3">
       <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-stone-100 text-stone-500">
@@ -98,6 +100,9 @@ export default async function MemberDetailsPage({
   const employment = member.profile?.employment;
   const identification = member.profile?.idDocument;
   const nextOfKin = member.profile?.nextOfKin;
+  // console.log(
+  //   "Relationship", nextOfKin?.relationship
+  // )
 
   const shareAccount = await getShareAccount({
     branchId: MEMBER_BRANCH_ID,

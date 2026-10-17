@@ -34,6 +34,7 @@ import {
   createContributionCharge,
   initiateDarajaContribution,
   getContributionPaymentRequest,
+  recoverDarajaPayment,
 } from "@/lib/server/contributions-api";
 import { GoApiError } from "@/lib/server/go-api";
 import { getLoan, listLoans } from "@/lib/server/loans-api";
@@ -127,18 +128,15 @@ export async function initiateSTKContributionAction(data: FormData): Promise<STK
   }
 }
 
-// checkSTKContributionAction only reads stored state; a missing record cannot prove
-// that an initiation still in flight failed, so the browser retains the saved request.
-export async function checkSTKContributionAction(idempotencyKey: string): Promise<STKState> {
+// checkSTKContributionAction can schedule a provider check without another prompt.
+// Without preserving the saved request, a missing confirmation could trigger a duplicate debit.
+export async function checkSTKContributionAction(idempotencyKey: string, queryProvider = false): Promise<STKState> {
   if (!z.uuid().safeParse(idempotencyKey).success)
     return { ok: false, message: "The saved payment reference is invalid." };
   try {
     const request = await getContributionPaymentRequest(idempotencyKey);
     if (!request.paymentRequestId) return { ok: false, message: "Payment status is unavailable. Check again." };
-    if (request.receipt?.status === "completed") {
-      updateTag("loan-directory");
-      revalidatePath("/dashboard/loans", "layout");
-    }
+    if (queryProvider && !request.receipt) await recoverDarajaPayment({ paymentRequestId: request.paymentRequestId, action: "query" });
     return { ok: true, request };
   } catch (error) {
     const missing = error instanceof GoApiError && error.status === 404;
