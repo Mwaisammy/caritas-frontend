@@ -9,6 +9,12 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: "bg-rose-800 text-primary-foreground hover:bg-rose-800/80",
+        brand:
+          "bg-brand-solid text-brand-foreground hover:bg-brand-solid/90 focus-visible:border-brand focus-visible:ring-brand/20",
+        "brand-soft":
+          "border-brand/20 bg-brand/10 text-brand hover:bg-brand/15 focus-visible:border-brand focus-visible:ring-brand/20",
+        "brand-outline":
+          "border-border bg-background hover:border-brand/30 hover:bg-brand/5 hover:text-brand focus-visible:border-brand focus-visible:ring-brand/20",
         outline:
           "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
         secondary:

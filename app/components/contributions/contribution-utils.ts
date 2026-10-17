@@ -141,3 +141,21 @@ export function moneyDecimal(money: ShareMoney) {
     .padStart(9, "0")
     .slice(0, 2)}`;
 }
+
+// Staff names are authoritative; short references distinguish any missing names.
+export function staffLabel(name: string | undefined, id: string | undefined) {
+  return (
+    name?.trim() || (id ? `Staff · ${id.slice(0, 8)}` : "Name unavailable")
+  );
+}
+
+// Custody timestamps use Nairobi time consistently and tolerate missing audit dates.
+export function custodyDate(value: string | undefined) {
+  return value
+    ? new Date(value).toLocaleString("en-KE", {
+        timeZone: "Africa/Nairobi",
+        dateStyle: "medium",
+        timeStyle: "short",
+      })
+    : "Not recorded";
+}

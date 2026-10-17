@@ -368,7 +368,7 @@ export function CashContributionFlow() {
             })
           }
         >
-          <FieldGroup>
+          {/* <FieldGroup>
             <Field>
               <FieldLabel htmlFor="receiptId">
                 Reopen a receipt by ID
@@ -378,7 +378,7 @@ export function CashContributionFlow() {
             <Button disabled={recording} type="submit">
               Load receipt
             </Button>
-          </FieldGroup>
+          </FieldGroup> */}
           {recordState?.ok === false ? (
             <div className="m-1.5 p-1.5 bg-rose-100 border flex items-center justify-center">
               <AlertTriangle className="size-4 text-rose-500 m-2" />
