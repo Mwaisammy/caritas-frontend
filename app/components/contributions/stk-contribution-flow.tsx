@@ -1,8 +1,10 @@
 "use client";
+import Link from "next/link";
 
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { z } from "zod";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -52,7 +54,7 @@ export function STKContributionFlow({ onLockChange }: { onLockChange: (locked: b
         setPhone(String(data.get("phoneNumber") ?? ""));
         setSaved(true);
         const recovered = await checkSTKContributionAction(String(data.get("idempotencyKey")));
-        if (!active) return;
+        if (!active || submission.current !== data) return;
         setState(recovered);
         if (recovered?.ok) setRequest(recovered.request);
       } catch {
@@ -151,6 +153,22 @@ export function STKContributionFlow({ onLockChange }: { onLockChange: (locked: b
     : request?.status === "CONTRIBUTION_PAYMENT_REQUEST_STATUS_PENDING" ? "Awaiting payment confirmation"
     : "Payment status unconfirmed";
 
+  // Clear browser recovery state so finishing or discarding starts a new request without altering payment records.
+  const returnToMemberSearch = () => {
+    if (!context) return;
+    try { sessionStorage.removeItem(`stk-submission:${context.staffId}`); }
+    catch { setState({ ok: false, message: "Browser recovery storage could not be cleared. Restore storage before another payment." }); return; }
+    submission.current = null;
+    setSaved(false);
+    setRequest(null);
+    setState(null);
+    setDraft(null);
+    setEditing(false);
+    setAmounts(emptyAmounts());
+    setPhone("");
+    setPhoneError("");
+  };
+
   if (startupError) return <Alert variant="destructive"><AlertTitle>M-Pesa workspace unavailable</AlertTitle><AlertDescription>{startupError}</AlertDescription></Alert>;
   if (!context) return <Alert><Spinner /><AlertTitle>Loading M-Pesa workspace</AlertTitle><AlertDescription>Checking staff access and saved requests.</AlertDescription></Alert>;
   if (!context.canRecord) return <Alert><AlertTitle>M-Pesa collection unavailable</AlertTitle><AlertDescription>You do not have permission to request payments.</AlertDescription></Alert>;
@@ -189,23 +207,38 @@ export function STKContributionFlow({ onLockChange }: { onLockChange: (locked: b
             {receipt.receivedAt ? <div><dt>Received at</dt><dd>{new Date(receipt.receivedAt).toLocaleString("en-KE", { timeZone: "Africa/Nairobi" })}</dd></div> : null}
             <div className="sm:col-span-2"><dt>Receipt reference</dt><dd className="break-all">{receipt.id}</dd></div>
           </dl>
+          {draft?.allocations.filter((item) => item.type === "CONTRIBUTION_ALLOCATION_TYPE_LOAN_PRINCIPAL" && item.targetId).map((item) => (
+            <Alert key={item.targetId}>
+              <AlertTitle>{completed ? "Loan repayment posted" : "Money received; loan posting not yet confirmed"}</AlertTitle>
+              <AlertDescription>
+                <p>{formatDecimalMoney(item.amount)} in the submitted loan allocation. Open the loan to confirm the posted split; it is not all principal.</p>
+                <Link href={`/dashboard/loans/${item.targetId}`} target="_blank" rel="noreferrer">View the remaining balance, interest and overpayment credit</Link>
+              </AlertDescription>
+            </Alert>
+          ))}
         </> : null}
         {state?.ok === false ? <Alert variant="destructive"><AlertTitle>Status unavailable</AlertTitle><AlertDescription>{state.message}</AlertDescription></Alert> : null}
       </CardContent>
       <CardFooter className="flex flex-wrap gap-3">
         <Button disabled={pending} onClick={checkStatus}>{pending ? <Spinner data-icon="inline-start" /> : null}Check status</Button>
         {!request ? <Button disabled={pending} onClick={sendPrompt} variant="outline">Retry same saved request</Button> : null}
-        {finished ? <Button disabled={pending} variant="outline" onClick={() => {
-          try { sessionStorage.removeItem(`stk-submission:${context.staffId}`); }
-          catch { setState({ ok: false, message: "Browser recovery storage could not be cleared. Restore storage before another payment." }); return; }
-          submission.current = null;
-          setSaved(false);
-          setRequest(null);
-          setState(null);
-          setDraft(null);
-          setEditing(false);
-          setAmounts(emptyAmounts());
-        }}>Finish and return to member search</Button> : null}
+        {finished ? <Button disabled={pending} variant="outline" onClick={returnToMemberSearch}>Finish and return to member search</Button> : (
+          <AlertDialog>
+            <AlertDialogTrigger render={<Button disabled={pending} variant="outline" />}>Discard and start over</AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Discard this saved payment?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This clears the saved payment from this browser and returns to member search. The original payment is not cancelled and may still complete. Check whether money was deducted before sending another prompt; a new attempt could charge again.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Keep checking payment</AlertDialogCancel>
+                <AlertDialogAction disabled={pending} onClick={returnToMemberSearch}>Discard and start over</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
       </CardFooter>
     </Card>
   );

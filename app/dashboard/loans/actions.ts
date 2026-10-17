@@ -33,7 +33,7 @@ function failure(error: unknown): LoanActionState {
   return {ok: false, message: "Something went wrong. Please try again."};
 }
 
-const applicationSchema = z.object({memberId: z.uuid(), principal: z.string().trim().regex(/^\d+(\.\d{1,2})?$/), interestRate: z.string().trim().regex(/^\d+(\.\d{1,4})?$/), repaymentPeriodMonths: z.coerce.number().int().positive().max(36), sharePledge: z.string().trim().regex(/^\d+(\.\d{1,2})?$/)});
+const applicationSchema = z.object({memberId: z.uuid(), principal: z.string().trim().regex(/^\d+(\.\d{1,2})?$/), interestRate: z.string().trim().regex(/^\d+(\.\d{1,2})?$/, "Enter a monthly percentage with up to two decimal places."), repaymentPeriodMonths: z.coerce.number().int().positive().max(36), sharePledge: z.string().trim().regex(/^\d+(\.\d{1,2})?$/)});
 const decisionSchema = z.object({loanId: z.string().trim().min(1), reason: z.string().trim().min(5).max(500)});
 
 // applyForLoanAction validates paired guarantees; the backend remains authoritative for capacity and eligibility.
@@ -56,7 +56,11 @@ export async function applyForLoanAction(_state: LoanActionState, formData: Form
     }
   }
   try {
-    const result = await applyForLoan({memberId: parsed.data.memberId, branchId: LOAN_BRANCH_ID, principal: parsed.data.principal, interestRate: parsed.data.interestRate, repaymentPeriodMonths: parsed.data.repaymentPeriodMonths, officerId, guarantors: guarantors.filter((item) => item.guarantorId), applicantSharePledgeAmount: moneyFrom(parsed.data.sharePledge)}); updateTag("loan-directory"); revalidatePath("/dashboard/loans"); return {ok: true, message: "Loan application submitted.", loanId: result.loanId}; } catch (error) { return failure(error); }
+    // The form accepts percentages; storage uses a monthly fraction. Without conversion, 1% becomes 100%.
+    const [wholeRate, fractionRate = ""] = parsed.data.interestRate.split(".");
+    const scaledRate = BigInt(wholeRate) * BigInt(100) + BigInt(fractionRate.padEnd(2, "0"));
+    const interestRate = `${scaledRate / BigInt(10_000)}.${(scaledRate % BigInt(10_000)).toString().padStart(4, "0")}`;
+    const result = await applyForLoan({memberId: parsed.data.memberId, branchId: LOAN_BRANCH_ID, principal: parsed.data.principal, interestRate, repaymentPeriodMonths: parsed.data.repaymentPeriodMonths, officerId, guarantors: guarantors.filter((item) => item.guarantorId), applicantSharePledgeAmount: moneyFrom(parsed.data.sharePledge)}); updateTag("loan-directory"); revalidatePath("/dashboard/loans"); return {ok: true, message: "Loan application submitted.", loanId: result.loanId}; } catch (error) { return failure(error); }
 }
 
 // approveLoanAction records the authenticated approver and refreshes the workspace.
@@ -133,17 +137,17 @@ export async function searchGuarantorMembersAction(search: string, pageToken = "
   }
 }
 
-// getGuarantorSecurityAction loads a current allowance from Shares rather than estimating it from contributions.
-export async function getGuarantorSecurityAction(memberId: string) {
+// getMemberShareSecurityAction supplies applicant and guarantor previews from the same authoritative Shares balance.
+export async function getMemberShareSecurityAction(memberId: string) {
   if (!z.uuid().safeParse(memberId).success) return {ok: false as const, message: "Select a member first."};
   try {
     const {account} = await getShareAccount({branchId: String(LOAN_BRANCH_ID), memberId});
     if (!account) return {ok: false as const, message: "This member has no share account."};
-    if (account.status !== "SHARE_ACCOUNT_STATUS_ACTIVE") return {ok: false as const, message: "This member needs an active share account to guarantee a loan."};
+    if (account.status !== "SHARE_ACCOUNT_STATUS_ACTIVE") return {ok: false as const, message: "This member needs an active share account to provide loan security."};
     const result = await getShareBalance({accountId: account.id, consistencyStrong: true});
-    return {ok: true as const, ...result};
+    return {ok: true as const, ...result, accountId: account.id};
   } catch (error) {
     const state = failure(error);
-    return {ok: false as const, message: state?.message ?? "Could not check guarantor shares."};
+    return {ok: false as const, message: state?.message ?? "Could not check share availability."};
   }
 }

@@ -4,7 +4,7 @@ import {useEffect, useId, useRef, useState} from "react";
 import {Combobox} from "@base-ui/react/combobox";
 import {Check, ChevronDown, LoaderCircle} from "lucide-react";
 
-import {getGuarantorSecurityAction, searchGuarantorMembersAction} from "@/app/dashboard/loans/actions";
+import {getMemberShareSecurityAction, searchGuarantorMembersAction} from "@/app/dashboard/loans/actions";
 import type {LoanActionState} from "@/app/dashboard/loans/actions";
 import type {Member} from "@/lib/go-api-client";
 import {Button} from "@/components/ui/button";
@@ -15,11 +15,12 @@ import {formatLoanMoney, loanMoneyUnits, shareMoneyDecimal} from "./loan-badges"
 
 // GuarantorFields shares member selection and capacity feedback between application
 // and add-guarantor forms; duplicating it would let their limits and identifiers drift.
-export function GuarantorFields({applicantId, disabled, required = false, state}: {
+export function GuarantorFields({applicantId, disabled, required = false, state, onGuaranteeChange}: {
   applicantId: string;
   disabled: boolean;
   required?: boolean;
   state: LoanActionState;
+  onGuaranteeChange?: (id: string, memberId: string, amount: bigint) => void;
 }) {
   const id = useId();
   // Keep search results inside the dialog; a body portal sits behind its overlay.
@@ -29,7 +30,7 @@ export function GuarantorFields({applicantId, disabled, required = false, state}
   const [result, setResult] = useState<Awaited<ReturnType<typeof searchGuarantorMembersAction>> | null>(null);
   const [searching, setSearching] = useState(false);
   const [selected, setSelected] = useState<Member | null>(null);
-  const [security, setSecurity] = useState<Awaited<ReturnType<typeof getGuarantorSecurityAction>> | null>(null);
+  const [security, setSecurity] = useState<Awaited<ReturnType<typeof getMemberShareSecurityAction>> | null>(null);
   const [amount, setAmount] = useState("");
 
   useEffect(() => {
@@ -48,7 +49,7 @@ export function GuarantorFields({applicantId, disabled, required = false, state}
   useEffect(() => {
     if (!selected) return;
     let cancelled = false;
-    getGuarantorSecurityAction(selected.id).then((response) => {
+    getMemberShareSecurityAction(selected.id).then((response) => {
       if (!cancelled) setSecurity(response);
     });
     return () => { cancelled = true; };
@@ -59,6 +60,12 @@ export function GuarantorFields({applicantId, disabled, required = false, state}
   const limit = available === null ? null : loanMoneyUnits(available);
   const overLimit = offered !== null && limit !== null && offered > limit;
   const amountError = overLimit ? `This member can guarantee at most ${formatLoanMoney(available ?? "0")} now. Reduce the amount or choose another member.` : "";
+
+  // Report only checked proposals so the application cannot show unchecked capacity as covered.
+  useEffect(() => {
+    onGuaranteeChange?.(id, selected?.id ?? "", security?.ok && !overLimit && offered !== null && offered > BigInt(0) ? offered : BigInt(0));
+    return () => onGuaranteeChange?.(id, "", BigInt(0));
+  }, [id, selected, security, overLimit, offered, onGuaranteeChange]);
 
   useEffect(() => {
     amountInput.current?.setCustomValidity(

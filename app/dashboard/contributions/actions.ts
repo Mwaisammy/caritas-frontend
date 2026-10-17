@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import {revalidatePath, updateTag} from "next/cache";
 
 import type {
   CashAllocationInput,
@@ -134,6 +135,10 @@ export async function checkSTKContributionAction(idempotencyKey: string): Promis
   try {
     const request = await getContributionPaymentRequest(idempotencyKey);
     if (!request.paymentRequestId) return { ok: false, message: "Payment status is unavailable. Check again." };
+    if (request.receipt?.status === "completed") {
+      updateTag("loan-directory");
+      revalidatePath("/dashboard/loans", "layout");
+    }
     return { ok: true, request };
   } catch (error) {
     const missing = error instanceof GoApiError && error.status === 404;
@@ -514,6 +519,10 @@ export async function recordCashContributionAction(
         message:
           "The receipt could not be confirmed. Check or retry the same contribution.",
       };
+    if (result.receipt.status === "completed") {
+      updateTag("loan-directory");
+      revalidatePath("/dashboard/loans", "layout");
+    }
     const messages = {
       completed: "Cash received and allocations completed.",
       pending:
@@ -592,6 +601,10 @@ export async function recoverCashReceiptAction(input: {
   try {
     const result = await getCashReceipt(parsed.data);
     if (!result.receipt) return { ok: false, message: "No receipt returned." };
+    if (result.receipt.status === "completed") {
+      updateTag("loan-directory");
+      revalidatePath("/dashboard/loans", "layout");
+    }
     return {
       ok: true,
       receipt: result.receipt,

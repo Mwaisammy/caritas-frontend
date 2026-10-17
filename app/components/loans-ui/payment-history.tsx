@@ -18,7 +18,7 @@ export function PaymentHistory({
         <div>
           <h2 className="font-semibold">Payment history</h2>
           <p className="mt-1 text-xs text-stone-500">
-            Most recent ledger entries returned by the service
+            Every payment shows its principal, interest, penalty and overpayment allocation.
           </p>
         </div>
         <ReceiptText className="size-5 text-stone-400" />
@@ -31,6 +31,10 @@ export function PaymentHistory({
                 <th className="px-6 py-3">Date</th>
                 <th className="px-6 py-3">Type</th>
                 <th className="px-6 py-3">Amount</th>
+                <th className="px-6 py-3">Principal</th>
+                <th className="px-6 py-3">Interest</th>
+                <th className="px-6 py-3">Penalty</th>
+                <th className="px-6 py-3">Credit created</th>
                 <th className="px-6 py-3">Reference</th>
                 <th className="px-6 py-3">Gateway ID</th>
               </tr>
@@ -45,6 +49,12 @@ export function PaymentHistory({
                   <td className="px-6 py-4 font-semibold">
                     {formatLoanMoney(item.amount)}
                   </td>
+                  {(["principal", "interest", "penalty", "credit"] as const).map((key) => (
+                    <td key={key} className="whitespace-nowrap px-6 py-4 tabular-nums">
+                      {item.type.toLowerCase().endsWith("repayment") && item.allocation?.[key]
+                        ? formatLoanMoney(item.allocation[key]) : "—"}
+                    </td>
+                  ))}
                   <td className="max-w-48 break-all px-6 py-4 font-mono text-xs">
                     {item.referenceId || "—"}
                   </td>

@@ -283,19 +283,37 @@ export type RepaymentStatus = "REPAYMENT_STATUS_UNSPECIFIED" | "REPAYMENT_STATUS
 export interface ProposedGuarantor {guarantorId: string; guaranteedAmount: string}
 
 // Loan contains backend data plus optional member display fields supplied by an enriched list response.
-export interface Loan {id: string; memberId: string; memberNumber?: string; memberName?: string; branchId: string; principal: string; outstandingPrincipal?: string; interestRate: string; repaymentPeriodMonths: number; status: LoanStatus; disbursedAt?: string; createdAt: string; updatedAt: string; updatedBy: string; previousStatus: string; applicantSharePledge?: string; approvedGuarantorCoverage?: string; collateralShortfall?: string}
+export interface Loan {id: string; memberId: string; memberNumber?: string; memberName?: string; branchId: string; principal: string; outstandingPrincipal?: string; availableCredit?: string; financialSummary?: LoanFinancialSummary; interestRate: string; repaymentPeriodMonths: number; status: LoanStatus; disbursedAt?: string; createdAt: string; updatedAt: string; updatedBy: string; previousStatus: string; applicantSharePledge?: string; approvedGuarantorCoverage?: string; collateralShortfall?: string}
+
+// LoanFinancialSummary exposes full-ledger balances so a page of payments cannot understate debt or credit.
+export interface LoanFinancialSummary {
+  principalOutstanding: string;
+  assessedInterestOutstanding: string;
+  unpostedInterest: string;
+  interestOutstanding: string;
+  penaltyOutstanding: string;
+  totalOutstanding: string;
+  received: string;
+  principalPaid: string;
+  interestPaid: string;
+  penaltyPaid: string;
+  overpayment: string;
+  availableCredit: string;
+  nextMonthInterest: string;
+  asOfPeriod: string;
+}
 
 // LoanGuarantor identifies a guarantee and optionally carries its member-facing labels.
 export interface LoanGuarantor {loanId: string; guarantorId: string; guarantorNumber?: string; guarantorName?: string; guaranteedAmount: string; status: GuarantorStatus; approvedAt?: string; approvedBy: string; createdAt: string}
 
 // CreditBalance describes withdrawable or restricted overpayment credit returned by the backend.
-export interface CreditBalance {id: string; memberId: string; loanId?: string; amount: string; source: string; status: CreditStatus; createdAt: string; lastActivityAt: string}
+export interface CreditBalance {id: string; memberId: string; loanId?: string; amount: string; availableAmount?: string; reservedAmount?: string; usedAmount?: string; source: string; status: CreditStatus; createdAt: string; lastActivityAt: string}
 
 // RepaymentSchedule represents one authoritative installment in the loan schedule.
 export interface RepaymentSchedule {id: string; loanId: string; installmentNo: number; dueDate: string; amountDue: string; status: RepaymentStatus}
 
 // LoanTransaction represents one immutable entry in payment history.
-export interface LoanTransaction {type: string; amount: string; referenceId: string; paymentGatewayTransactionId: string; createdAt: string; createdBy: string; loanId: string; transactionId: string}
+export interface LoanTransaction {type: string; amount: string; referenceId: string; paymentGatewayTransactionId: string; createdAt: string; createdBy: string; loanId: string; transactionId: string; allocation?: {principal: string; interest: string; penalty: string; credit: string}}
 
 // ContributionCharge identifies an assessed obligation; without its ID a payment cannot target or settle it.
 export type ContributionCharge = {
