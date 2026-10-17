@@ -73,6 +73,12 @@
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-brand: var(--brand);
+  --color-brand-solid: var(--brand-solid);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-status-pending: var(--status-pending);
+  --color-status-ready: var(--status-ready);
+  --color-status-verified: var(--status-verified);
   --color-primary: var(--primary);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
@@ -90,6 +96,12 @@
 }
 
 :root {
+  --brand: #9f1239;
+  --brand-solid: #9f1239;
+  --brand-foreground: #ffffff;
+  --status-pending: #92400e;
+  --status-ready: #1d4ed8;
+  --status-verified: #166534;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -125,6 +137,10 @@
 }
 
 .dark {
+  --brand: #fda4af;
+  --status-pending: #f55f40;
+  --status-ready: #62a7f6;
+  --status-verified: #46eb7a;
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
