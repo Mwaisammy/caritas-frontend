@@ -20,6 +20,7 @@ import {
   type CashMutationState,
 } from "@/app/dashboard/contributions/actions";
 import { allocationLabel, formatMoney } from "./contribution-utils";
+import { LoanContributionBreakdown } from "./loan-contribution-breakdown";
 // maskedNationalId limits identity exposure on a receipt that may be left at the printer.
 function maskedNationalId(value: string) {
   return value.length <= 4
@@ -181,10 +182,7 @@ export function ReceiptStep({
           <Separator />
           <section className="flex flex-col gap-2">
             <h2 className="font-medium">{completed ? "Payment breakdown" : "Recorded allocation plan"}</h2>
-            <p className="text-sm text-muted-foreground">
-              Loan payments are combined amounts. Loans records the actual
-              interest, principal, and credit split.
-            </p>
+            <p className="text-sm text-muted-foreground">Loan payment totals include the interest, penalties and principal shown in the loan breakdown below.</p>
             {(receipt.allocations ?? []).map((item) => {
               const [label, ...reason] = (item.displayLabel || allocationLabel(item.type)).split(" · ");
               return (
@@ -222,6 +220,7 @@ export function ReceiptStep({
               <span>{formatMoney(receipt.amount)}</span>
             </div>
           </section>
+          <LoanContributionBreakdown posted pending={!completed} loans={receipt.loans} snapshotAvailable={receipt.loanSnapshotAvailable} />
           <Separator />
           <section className="grid gap-3 sm:grid-cols-2">
             <p>
