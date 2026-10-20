@@ -293,10 +293,15 @@ export function ContributionEntryStep({
               setEntryError("A charge payment exceeds its outstanding amount.");
               return;
             }
+            if (obligations?.ok && allocations.some((item) => item.type === "CONTRIBUTION_ALLOCATION_TYPE_LOAN_PRINCIPAL" && !obligations.loans.some((loan) => loan.loanId === item.targetId && loan.payable))) {
+              setEntryError("A selected loan cannot accept payment for this month. Reload obligations or choose an eligible month.");
+              return;
+            }
             onReview({
               contributionPeriod: period,
               allocations,
               amount: amounts.cash,
+              loans: obligations?.ok ? obligations.loans : undefined,
             });
           }}
         >

@@ -449,7 +449,9 @@ export async function loadCashObligationsAction(
         return rows;
       })(),
     ]);
-    return { ok: true as const, fees: quote.fees ?? [], charges };
+    if (!quote.loanSnapshotAvailable)
+      return { ok: false as const, message: "Loan interest information is unavailable. Reload obligations before reviewing the contribution." };
+    return { ok: true as const, fees: quote.fees ?? [], charges, loans: quote.loans ?? [] };
   } catch (error) {
     return failure(error);
   }
