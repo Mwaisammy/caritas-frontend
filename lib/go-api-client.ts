@@ -222,6 +222,29 @@ export interface CashContributionReceipt {
   memberId: string
   contributionPeriod: string
   allocations: (CashAllocationInput & {status: string; authoritativeReferenceId?: string; displayLabel?: string})[]
+  loans?: ContributionLoanSummary[]
+  loanSnapshotAvailable?: boolean
+}
+
+// ContributionLoanSummary separates debt from payment and preserves receipt-time loan figures.
+export interface ContributionLoanSummary {
+  loanId: string;
+  period: string;
+  openingPrincipal: string;
+  interestRate: string;
+  periodInterest: string;
+  earlierInterestDue: string;
+  interestDue: string;
+  penaltyDue: string;
+  principalDue: string;
+  payment: string;
+  penaltyPaid: string;
+  interestPaid: string;
+  principalPaid: string;
+  credit: string;
+  interestRemaining: string;
+  principalRemaining: string;
+  payable: boolean;
 }
 
 // The status union keeps filters and badges aligned with the share service contract.
@@ -346,6 +369,8 @@ export type ContributionPaymentRequest = {
     amount: ShareMoney;
     mpesaReference?: string;
     receivedAt?: string;
+    loans?: ContributionLoanSummary[];
+    loanSnapshotAvailable?: boolean;
   };
 };
 

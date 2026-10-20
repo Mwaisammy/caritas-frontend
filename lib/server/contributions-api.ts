@@ -8,6 +8,7 @@ import type {
   ContributionCharge,
   CashContext,
   CashDeposit,
+  ContributionLoanSummary,
   ContributionPaymentRequest,
   DarajaPayment,
 } from "@/lib/go-api-client";
@@ -74,7 +75,7 @@ export const getCashContext = async () =>
 export const getContributionQuote = async (memberId: string, period: string) =>
   (await goApiGet(
     `/api/v1/contributions/quote?${new URLSearchParams({ memberId, contributionPeriod: period })}`,
-  )) as { fees: CashAllocationInput[] };
+  )) as { fees: CashAllocationInput[]; loans?: ContributionLoanSummary[]; loanSnapshotAvailable?: boolean };
 export const listContributionCharges = async (
   memberId: string,
   pageToken = "",
