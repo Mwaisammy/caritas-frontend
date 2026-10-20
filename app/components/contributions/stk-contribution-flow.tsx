@@ -1,5 +1,5 @@
 "use client";
-import Link from "next/link";
+import { LoanContributionBreakdown } from "./loan-contribution-breakdown";
 
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { z } from "zod";
@@ -221,15 +221,7 @@ export function STKContributionFlow({ onLockChange }: { onLockChange: (locked: b
             {receipt.receivedAt ? <div><dt>Received at</dt><dd>{new Date(receipt.receivedAt).toLocaleString("en-KE", { timeZone: "Africa/Nairobi" })}</dd></div> : null}
             <div className="sm:col-span-2"><dt>Receipt reference</dt><dd className="break-all">{receipt.id}</dd></div>
           </dl>
-          {draft?.allocations.filter((item) => item.type === "CONTRIBUTION_ALLOCATION_TYPE_LOAN_PRINCIPAL" && item.targetId).map((item) => (
-            <Alert key={item.targetId}>
-              <AlertTitle>{completed ? "Loan repayment posted" : "Money received; loan posting not yet confirmed"}</AlertTitle>
-              <AlertDescription>
-                <p>{formatDecimalMoney(item.amount)} in the submitted loan allocation. Open the loan to confirm the posted split; it is not all principal.</p>
-                <Link href={`/dashboard/loans/${item.targetId}`} target="_blank" rel="noreferrer">View the remaining balance, interest and overpayment credit</Link>
-              </AlertDescription>
-            </Alert>
-          ))}
+          <LoanContributionBreakdown posted pending={!completed} loans={receipt.loans} snapshotAvailable={receipt.loanSnapshotAvailable} />
         </> : null}
         {state?.ok === false ? <Alert variant="destructive"><AlertTitle>Status unavailable</AlertTitle><AlertDescription>{state.message}</AlertDescription></Alert> : null}
       </CardContent>
@@ -267,6 +259,7 @@ export function STKContributionFlow({ onLockChange }: { onLockChange: (locked: b
           {draft.allocations.map((item) => <div className="flex justify-between gap-3" key={`${item.type}-${item.targetId ?? "fee"}`}><dt>{allocationLabel(item.type)}</dt><dd>{formatDecimalMoney(item.amount)}</dd></div>)}
         </dl>
         <Separator />
+        <LoanContributionBreakdown loans={draft.loans} allocations={draft.allocations} />
         <form onSubmit={(event) => { event.preventDefault(); sendPrompt(); }}>
           <FieldGroup>
             <Field data-invalid={Boolean(phoneError)}>

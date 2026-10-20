@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
+import { LoanContributionBreakdown } from "./loan-contribution-breakdown";
 import type {
   CashMemberState,
   CashMutationState,
@@ -94,6 +95,7 @@ export function ReviewContributionStep({
             );
           })}
         </div>
+        <LoanContributionBreakdown loans={draft.loans} allocations={draft.allocations} />
         {state?.ok === false ? (
           <p className="text-sm text-destructive" role="alert">
             {state.message}

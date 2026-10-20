@@ -1,4 +1,4 @@
-import type { CashAllocationType, ShareMoney } from "@/lib/go-api-client";
+import type { CashAllocationType, ContributionLoanSummary, ShareMoney } from "@/lib/go-api-client";
 import type { CashLoanDetails } from "@/app/dashboard/contributions/actions";
 
 // AllocationAmounts is the editable cash split kept locally until review.
@@ -23,6 +23,8 @@ export type ContributionDraft = {
   contributionPeriod: string;
   allocations: ContributionAllocationDraft[];
   amount: string;
+  // Display-only quote; posting obtains and saves its own authoritative figures.
+  loans?: ContributionLoanSummary[];
 };
 
 // emptyAmounts initializes editable cash and targets; monthly fees come from the backend quote.
