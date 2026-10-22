@@ -1,5 +1,6 @@
 "use client";
 
+import { CurrencyInput } from "@/components/currency-input";
 import {useActionState, useEffect, useState, useTransition} from "react";
 import {Alert, AlertDescription} from "@/components/ui/alert";
 import {Button} from "@/components/ui/button";
@@ -158,7 +159,7 @@ export function ChargeAssessment({
                 <FieldLabel htmlFor="chargeAmount">
                   Assessed amount (KES)
                 </FieldLabel>
-                <Input
+                <CurrencyInput
                   id="chargeAmount"
                   name="amount"
                   inputMode="decimal"

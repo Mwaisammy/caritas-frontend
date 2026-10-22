@@ -1,5 +1,6 @@
 "use client";
 
+import { CurrencyInput } from "@/components/currency-input";
 import {useActionState, useState} from "react";
 import {useRouter} from "next/navigation";
 import {LoaderCircle, Minus, Plus, SlidersHorizontal} from "lucide-react";
@@ -8,7 +9,6 @@ import {Alert, AlertDescription} from "@/components/ui/alert";
 import {Button} from "@/components/ui/button";
 import {Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger} from "@/components/ui/dialog";
 import {Field, FieldDescription, FieldError, FieldGroup, FieldLabel} from "@/components/ui/field";
-import {Input} from "@/components/ui/input";
 import {Textarea} from "@/components/ui/textarea";
 import {ToggleGroup, ToggleGroupItem} from "@/components/ui/toggle-group";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";
@@ -80,13 +80,10 @@ export function CreateAdjustmentDialog({accountId, submitAction}: {
             </Field>
             <Field data-invalid={Boolean(errors?.amount)} data-disabled={disabled}>
               <FieldLabel htmlFor="adjustment-amount">Amount (KES)</FieldLabel>
-              <Input
+              <CurrencyInput
                 id="adjustment-amount"
-                type="number"
                 value={amount}
-                onChange={(event) => setAmount(event.target.value)}
-                min="0"
-                step="0.01"
+                onValueChange={setAmount}
                 inputMode="decimal"
                 placeholder="0.00"
                 disabled={disabled}

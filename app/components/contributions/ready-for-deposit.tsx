@@ -1,5 +1,6 @@
 "use client";
 
+import { CurrencyInput } from "@/components/currency-input";
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -266,7 +267,7 @@ export function ReadyForDeposit({
                   <FieldLabel htmlFor="depositAmount">
                     Actual bank deposit (KES)
                   </FieldLabel>
-                  <Input
+                  <CurrencyInput
                     id="depositAmount"
                     name="amount"
                     inputMode="decimal"

@@ -1,5 +1,6 @@
 "use client";
 
+import { CurrencyInput } from "@/components/currency-input";
 import { useActionState, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LoaderCircle, ArrowUpFromLine } from "lucide-react";
@@ -23,7 +24,6 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
 function formatWithdrawAmount(value: string) {
@@ -115,13 +115,10 @@ export function WithdrawSharesDialog({
               data-disabled={disabled}
             >
               <FieldLabel htmlFor="withdrawal-amount">Amount (KES)</FieldLabel>
-              <Input
+              <CurrencyInput
                 id="withdrawal-amount"
-                type="number"
                 value={amount}
-                onChange={(event) => setAmount(event.target.value)}
-                min="0"
-                step="0.01"
+                onValueChange={setAmount}
                 inputMode="decimal"
                 placeholder="KES 0.00"
                 disabled={disabled}
