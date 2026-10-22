@@ -1,4 +1,5 @@
 "use client";
+import { CurrencyInput } from "@/components/currency-input";
 import { ChargeAssessment } from "./charge-assessment";
 import { useState, useEffect, useTransition } from "react";
 import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
@@ -58,11 +59,11 @@ function MoneyField({
   return (
     <Field data-invalid={invalid}>
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
-      <Input
+      <CurrencyInput
         id={id}
         aria-invalid={invalid}
         inputMode="decimal"
-        onChange={(event) => onChange(event.target.value)}
+        onValueChange={onChange}
         placeholder="KES 00.00"
         readOnly={readOnly}
         value={value}
@@ -403,17 +404,17 @@ export function ContributionEntryStep({
                         <FieldDescription>
                           Outstanding: {formatMoney(charge.outstanding)}
                         </FieldDescription>
-                        <Input
+                        <CurrencyInput
                           id={`charge-${charge.id}`}
                           inputMode="decimal"
                           value={value}
                           aria-invalid={invalid}
-                          onChange={(event) =>
+                          onValueChange={(amount) =>
                             setAmounts({
                               ...amounts,
                               charges: {
                                 ...amounts.charges,
-                                [charge.id]: event.target.value,
+                                [charge.id]: amount,
                               },
                             })
                           }

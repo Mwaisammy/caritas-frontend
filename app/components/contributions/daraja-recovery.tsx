@@ -1,5 +1,6 @@
 "use client";
 
+import { CurrencyInput } from "@/components/currency-input";
 import { useEffect, useState, useTransition } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -253,7 +254,7 @@ export function DarajaRecovery() {
                       <FieldLabel htmlFor="recovery-amount">
                         Received amount (KES)
                       </FieldLabel>
-                      <Input
+                      <CurrencyInput
                         id="recovery-amount"
                         name="amount"
                         inputMode="decimal"
