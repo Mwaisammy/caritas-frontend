@@ -1,5 +1,6 @@
 "use client";
 
+import { CurrencyInput } from "@/components/currency-input";
 import {useEffect, useId, useRef, useState} from "react";
 import {Combobox} from "@base-ui/react/combobox";
 import {Check, ChevronDown, LoaderCircle} from "lucide-react";
@@ -135,7 +136,7 @@ export function GuarantorFields({applicantId, disabled, required = false, state,
       ) : null}
       <Field data-disabled={disabled} data-invalid={overLimit}>
         <FieldLabel htmlFor={`${id}-amount`}>Guaranteed amount (KES)</FieldLabel>
-        <Input id={`${id}-amount`} ref={amountInput} name="guaranteedAmount" inputMode="decimal" value={amount} disabled={disabled} required={required || Boolean(selected)} aria-invalid={overLimit} onChange={(event) => setAmount(event.target.value)} />
+        <CurrencyInput id={`${id}-amount`} ref={amountInput} name="guaranteedAmount" inputMode="decimal" value={amount} disabled={disabled} required={required || Boolean(selected)} aria-invalid={overLimit} onValueChange={setAmount} />
         {amountError ? <FieldError>{amountError}</FieldError> : null}
         <LoanFieldError name="guaranteedAmount" state={state} />
       </Field>

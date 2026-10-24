@@ -1,5 +1,6 @@
 "use client";
 
+import { CurrencyInput } from "@/components/currency-input";
 import { useRef, useState, useTransition } from "react";
 import { z } from "zod";
 import {
@@ -302,7 +303,7 @@ export function CreditBalance({
                           <FieldLabel htmlFor="credit-amount">
                             Amount (KES)
                           </FieldLabel>
-                          <Input
+                          <CurrencyInput
                             id="credit-amount"
                             name="amount"
                             inputMode="decimal"
