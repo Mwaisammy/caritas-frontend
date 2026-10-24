@@ -1,5 +1,6 @@
 "use client";
 
+import { CurrencyInput } from "@/components/currency-input";
 import {startTransition, useActionState, useCallback, useEffect, useRef, useState} from "react";
 import Link from "next/link";
 import {ArrowLeft, LoaderCircle, Plus, Send, Trash2} from "lucide-react";
@@ -110,14 +111,27 @@ export function LoanApplicationForm({member}: {member: Member}) {
           <FieldGroup className="grid sm:grid-cols-2">
             <Field data-disabled={pending} data-invalid={Boolean(principalError || (state && !state.ok && state.fieldErrors?.principal))}>
               <FieldLabel htmlFor="principal">Principal (KES)</FieldLabel>
-              <Input ref={principalInput} id="principal" name="principal" inputMode="decimal" disabled={pending} required value={terms.principal} onChange={(event) => setTerms({...terms, principal: event.target.value})} aria-describedby="principal-limit principal-error" aria-invalid={Boolean(principalError || (state && !state.ok && state.fieldErrors?.principal))} />
+              <CurrencyInput ref={principalInput} id="principal" name="principal" inputMode="decimal" disabled={pending} required value={terms.principal} onValueChange={(principal) => setTerms({...terms, principal})} aria-describedby="principal-limit principal-error" aria-invalid={Boolean(principalError || (state && !state.ok && state.fieldErrors?.principal))} />
               <FieldDescription id="principal-limit">3× share limit: {ceiling === null ? "awaiting a successful share check" : formatLoanMoney(decimal(ceiling))}. Subject to security and approval.</FieldDescription>
               <FieldError id="principal-error" aria-live="polite">{principalError}</FieldError>
               <LoanFieldError name="principal" state={state} />
             </Field>
             <Field data-disabled={pending} data-invalid={Boolean(state && !state.ok && state.fieldErrors?.interestRate)}>
               <FieldLabel htmlFor="interestRate">Monthly interest rate (%)</FieldLabel>
-              <Input id="interestRate" name="interestRate" inputMode="decimal" disabled={pending} required value={terms.interestRate} onChange={(event) => setTerms({...terms, interestRate: event.target.value})} aria-invalid={Boolean(state && !state.ok && state.fieldErrors?.interestRate)} />
+              <Input
+                id="interestRate"
+                name="interestRate"
+                inputMode="decimal"
+                pattern="[0-9]+([.][0-9]{1,2})?"
+                disabled={pending}
+                required
+                value={terms.interestRate}
+                onChange={(event) => {
+                  const interestRate = event.target.value;
+                  if (/^\d*(\.\d{0,2})?$/.test(interestRate)) setTerms({...terms, interestRate});
+                }}
+                aria-invalid={Boolean(state && !state.ok && state.fieldErrors?.interestRate)}
+              />
               <LoanFieldError name="interestRate" state={state} />
               <FieldDescription>Enter 1 for 1% per month, or 0 for an interest-free loan. Interest is charged on the month’s opening unpaid principal.</FieldDescription>
             </Field>
@@ -128,7 +142,7 @@ export function LoanApplicationForm({member}: {member: Member}) {
             </Field>
             <Field data-disabled={pending} data-invalid={Boolean(pledgeError || (state && !state.ok && state.fieldErrors?.sharePledge))}>
               <FieldLabel htmlFor="sharePledge">Applicant share pledge (KES)</FieldLabel>
-              <Input ref={pledgeInput} id="sharePledge" name="sharePledge" inputMode="decimal" disabled={pending} required placeholder="0.00" value={terms.sharePledge} onChange={(event) => setTerms({...terms, sharePledge: event.target.value})} aria-describedby="pledge-limit pledge-error" aria-invalid={Boolean(pledgeError || (state && !state.ok && state.fieldErrors?.sharePledge))} />
+              <CurrencyInput ref={pledgeInput} id="sharePledge" name="sharePledge" inputMode="decimal" disabled={pending} required placeholder="0.00" value={terms.sharePledge} onValueChange={(sharePledge) => setTerms({...terms, sharePledge})} aria-describedby="pledge-limit pledge-error" aria-invalid={Boolean(pledgeError || (state && !state.ok && state.fieldErrors?.sharePledge))} />
               <Button type="button" variant="outline" size="sm" disabled={pending || available === null || principal === null || principal <= BigInt(0)} onClick={() => {
                 if (available === null || principal === null) return;
                 const amount = (available < principal ? available : principal) / BigInt(100);

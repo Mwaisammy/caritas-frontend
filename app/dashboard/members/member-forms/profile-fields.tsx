@@ -1,3 +1,4 @@
+import { CurrencyInput } from "@/components/currency-input";
 import type {Member, RelationshipType} from "@/lib/go-api-client";
 import {Field, type FieldErrors, inputClass, selectClass} from "./form-shared";
 
@@ -43,7 +44,7 @@ export function ProfileFields({member, errors}: {member?: Member; errors?: Field
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Occupation" name="occupation" error={errors?.occupation}><input {...errorProps(errors, "occupation")} className={inputClass} defaultValue={employment?.occupation} id="occupation" name="occupation" required /></Field>
           <Field label="Employer" name="employer" error={errors?.employer}><input {...errorProps(errors, "employer")} className={inputClass} defaultValue={employment?.employer} id="employer" name="employer" required /></Field>
-          <Field label="Monthly income" name="monthlyIncome" error={errors?.monthlyIncome}><input {...errorProps(errors, "monthlyIncome")} className={inputClass} defaultValue={employment?.monthlyIncome ? (Number(employment.monthlyIncome.units ?? "0") + (employment.monthlyIncome.nanos ?? 0) / 1_000_000_000).toFixed(2) : ""} id="monthlyIncome" inputMode="decimal" min="0" max="9999999999.99" step="0.01" name="monthlyIncome" required type="number" /></Field>
+          <Field label="Monthly income" name="monthlyIncome" error={errors?.monthlyIncome}><CurrencyInput {...errorProps(errors, "monthlyIncome")} defaultValue={employment?.monthlyIncome ? (Number(employment.monthlyIncome.units ?? "0") + (employment.monthlyIncome.nanos ?? 0) / 1_000_000_000).toFixed(2) : ""} id="monthlyIncome" inputMode="decimal" name="monthlyIncome" required /></Field>
           <Field label="Currency" name="currencyCode" error={errors?.currencyCode}><input {...errorProps(errors, "currencyCode")} className={inputClass} value="KES" readOnly id="currencyCode" name="currencyCode" required /></Field>
         </div>
       </section>

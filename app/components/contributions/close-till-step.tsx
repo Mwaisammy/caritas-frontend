@@ -1,3 +1,4 @@
+import { CurrencyInput } from "@/components/currency-input";
 import { ArrowLeftIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -73,7 +74,7 @@ export function CloseTillStep({
                 <FieldLabel htmlFor="countedAmount">
                   Counted cash (KES)
                 </FieldLabel>
-                <Input
+                <CurrencyInput
                   aria-invalid={Boolean(error)}
                   disabled={pending}
                   id="countedAmount"
