@@ -184,46 +184,9 @@
 }
 
 @media print {
-  @page ceep {
-    size: A3 landscape;
-    margin: 10mm;
-    @bottom-right { content: "Page " counter(page) " of " counter(pages); }
-  }
-
-  .ceep-report, .ceep-report * { visibility: visible; }
-  /* Keep the report in normal flow so named landscape pages can fragment and
-     repeat table headers. Merely hiding the dashboard leaves blank print pages. */
-  body:has(.ceep-report) *:not(:has(.ceep-report)):not(.ceep-report):not(.ceep-report *) {
-    display: none !important;
-  }
-  body:has(.ceep-report) *:has(.ceep-report) {
-    display: block !important;
-    position: static !important;
-    min-height: 0 !important;
-    width: auto !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow: visible !important;
-  }
-  .ceep-report {
+  html:has(.ceep-print) {
     page: ceep;
-    display: block;
-    position: static;
-    width: 100%;
-    font-size: 8pt;
   }
-  .ceep-report > * { margin-block-end: 4mm; }
-  .ceep-report [data-slot="table-container"] { overflow: visible; }
-  .ceep-table { width: 100%; table-layout: fixed; font-size: 7pt; }
-  .ceep-table th, .ceep-table td { white-space: normal; overflow-wrap: anywhere; padding: 3px; }
-  .ceep-table th:nth-child(1) { width: 9%; }
-  .ceep-table th:nth-child(2) { width: 3%; }
-  .ceep-table th:nth-child(3) { width: 15%; }
-  .ceep-table thead { display: table-header-group; }
-  .ceep-table tr { break-inside: avoid; }
-  .ceep-details { break-before: page; }
-  .ceep-details details { break-inside: avoid; }
-  .ceep-details details > * { display: block; }
 
   body * {
     visibility: hidden;
@@ -239,5 +202,63 @@
     inset: 0;
     width: 100%;
     box-shadow: none;
+  }
+
+  .ceep-print,
+  .ceep-print * {
+    visibility: visible;
+  }
+
+  .ceep-print {
+    page: ceep;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    color: black;
+    background: white;
+    --card: white;
+    --muted: #f3f3f3;
+    --muted-foreground: #444;
+    --border: #ccc;
+  }
+
+  .ceep-table-scroll {
+    overflow: visible;
+    max-height: none;
+  }
+
+  .ceep-table {
+    width: 100%;
+    font-size: 7pt;
+  }
+
+  .ceep-table thead {
+    display: table-header-group;
+    position: static;
+  }
+
+  .ceep-table tfoot {
+    display: table-row-group;
+  }
+
+  .ceep-table tr {
+    break-inside: avoid;
+  }
+
+  .ceep-table th,
+  .ceep-table td {
+    position: static;
+    min-width: 0;
+    padding: 4px;
+    white-space: normal;
+  }
+}
+
+@page ceep {
+  size: A3 landscape;
+  margin: 12mm;
+
+  @bottom-right {
+    content: "Page " counter(page);
   }
 }

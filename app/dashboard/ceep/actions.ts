@@ -2,61 +2,74 @@
 
 import { z } from "zod";
 import { GoApiError, goApiGet, goApiPost } from "@/lib/server/go-api";
-import type { CEEPReport } from "./report";
+import { getCashContext } from "@/lib/server/contributions-api";
+import { ceepReportSchema } from "@/app/components/ceep/ceep-report-data";
 
-// loadCEEPReport keeps the existing authenticated Go gateway boundary. Removing
-// it would either expose tokens in the browser or bypass backend authorization.
-export async function loadCEEPReport(
-  input: {
-    period: string;
-    cutoff?: string;
-    title?: string;
-    parish?: string;
-    paymentDate?: string;
-    previewHash?: string;
-  },
-  finalize = false,
-): Promise<
-  { report: CEEPReport; error?: never } | { error: string; report?: never }
-> {
-  const parsed = z
-    .object({
-      period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])-01$/),
-      cutoff: z.string().optional(),
-      title: z.string().max(160).optional(),
-      parish: z.string().max(160).optional(),
-      paymentDate: z.string().optional(),
-      previewHash: z.string().optional(),
-    })
-    .safeParse(input);
-  if (!parsed.success)
-    return { error: "Choose a valid reporting month and check the headings." };
+const reportRequest = z.object({
+  period: z.iso.date().regex(/^\d{4}-\d{2}-01$/, "Choose a reporting month."),
+  cutoff: z.union([z.iso.datetime({ offset: true }), z.literal("")]).default(""),
+  title: z.string().trim().default(""),
+  parish: z.string().trim().default(""),
+  paymentDate: z.union([z.iso.date(), z.literal("")]).default(""),
+});
+
+// Loads authoritative figures through the existing authenticated gateway; the browser never assembles ledger data.
+export async function loadCeepReport(data: FormData) {
+  const parsed = reportRequest.safeParse(Object.fromEntries(data));
+  if (!parsed.success) {
+    return { ok: false as const, message: parsed.error.issues[0].message };
+  }
+
   try {
-    const report = finalize
-      ? await goApiPost<CEEPReport>(
-          "/api/v1/contributions/ceep/finalize",
-          parsed.data,
-        )
-      : ((await goApiGet(
-          `/api/v1/contributions/ceep?${new URLSearchParams(
-            Object.entries(parsed.data).filter(
-              (entry): entry is [string, string] =>
-                typeof entry[1] === "string",
-            ),
-          )}`,
-        )) as CEEPReport);
-    return { report };
+    const query = new URLSearchParams(
+      Object.entries(parsed.data).filter(([, value]) => value !== ""),
+    );
+    // response_body: "report" makes the HTTP response the report itself, without a wrapper.
+    const [response, context] = await Promise.all([
+      goApiGet(`/api/v1/contributions/ceep?${query}`),
+      getCashContext(),
+    ]);
+    const report = ceepReportSchema.safeParse(response);
+    if (!report.success || report.data.period !== parsed.data.period) {
+      return { ok: false as const, message: "This report could not be read safely. Please contact support before exporting or finalizing it." };
+    }
+    return { ok: true as const, report: report.data, canApprove: context.canApprove };
   } catch (error) {
     return {
-      error:
-        error instanceof GoApiError
-          ? (error.detail ??
-            (error.status === 403
-              ? "You do not have permission to finalize CEEP reports."
-              : error.status === 401
-                ? "Sign in to access CEEP reports."
-                : "Unable to load the report. Retry with the same month to retrieve any finalized report."))
-          : "Unable to load the report. Please try again.",
+      ok: false as const,
+      message: error instanceof GoApiError
+        ? error.detail ?? (error.status === 401 ? "Please sign in again." : "Unable to load the CEEP report. Please try again.")
+        : "Unable to load the CEEP report. Please try again.",
+    };
+  }
+}
+
+// The preview hash binds approval to the reviewed report; omitting it could approve changed financial facts.
+export async function finalizeCeepReport(data: FormData) {
+  const parsed = reportRequest.extend({
+    cutoff: z.iso.datetime({ offset: true }),
+    previewHash: z.string().trim().min(1, "Load and review the report before finalizing."),
+  }).safeParse(Object.fromEntries(data));
+  if (!parsed.success) {
+    return { ok: false as const, message: parsed.error.issues[0].message };
+  }
+
+  try {
+    const response = await goApiPost(
+      "/api/v1/contributions/ceep/finalize",
+      Object.fromEntries(Object.entries(parsed.data).filter(([, value]) => value !== "")),
+    );
+    const report = ceepReportSchema.safeParse(response);
+    if (!report.success || report.data.status !== "finalized" || report.data.period !== parsed.data.period) {
+      return { ok: false as const, message: "Finalization returned an unrecognized report. Reload this month to check its saved status before trying again." };
+    }
+    return { ok: true as const, report: report.data };
+  } catch (error) {
+    return {
+      ok: false as const,
+      message: error instanceof GoApiError
+        ? error.detail ?? (error.status === 403 ? "You do not have permission to finalize this report." : "Finalization could not be confirmed. Reload this month to check its saved status before trying again.")
+        : "Finalization could not be confirmed. Reload this month to check its saved status before trying again.",
     };
   }
 }

@@ -82,7 +82,7 @@ export function LoanSummary({
                 label: "Total to settle this month",
                 amount: financial.totalOutstanding,
                 detail:
-                  "Unpaid principal + interest + penalties. Credit is shown separately.",
+                  "Unpaid principal + interest + penalties",
               },
               {
                 label: "Principal still unpaid",
