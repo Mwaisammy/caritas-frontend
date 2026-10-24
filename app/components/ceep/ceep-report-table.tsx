@@ -1,4 +1,4 @@
-import { ceepAmount, ceepAmountColumns, ceepRows, type CEEPReport } from "./ceep-report-data";
+import { ceepAmountColumns, ceepRows, ceepTotals, type CEEPReport } from "./ceep-report-data";
 import { cn } from "@/lib/utils";
 
 // One table is used on screen and in print, preventing differences between the reviewed and printed report.
@@ -41,7 +41,7 @@ export function CeepReportTable({ report }: { report: CEEPReport }) {
         <tfoot className="border-t bg-muted/50 font-medium">
           <tr>
             <th colSpan={3} scope="row" className="px-3 py-3 text-left">Totals</th>
-            {ceepAmountColumns.map(([key]) => <td key={key} className="whitespace-nowrap px-3 py-3 text-right">{ceepAmount(report.totals[key])}</td>)}
+            {ceepTotals(report).map((total, index) => <td key={headings[index + 3]} className="whitespace-nowrap px-3 py-3 text-right">{total}</td>)}
           </tr>
         </tfoot>
       </table>

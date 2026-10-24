@@ -14,7 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import { CeepReportTable } from "./ceep-report-table";
-import { ceepAmount, ceepAmountColumns, ceepRows, type CEEPReport } from "./ceep-report-data";
+import { ceepAmountColumns, ceepRows, ceepTotals, type CEEPReport } from "./ceep-report-data";
 
 // Owns the reviewed report and its exact request; editing controls discards approval eligibility immediately.
 export function CeepReport({ initialMonth, currentMonth }: { initialMonth: string; currentMonth: string }) {
@@ -26,8 +26,8 @@ export function CeepReport({ initialMonth, currentMonth }: { initialMonth: strin
   const [mustReload, setMustReload] = useState(false);
   const report = loaded?.report;
   const finalized = report?.status === "finalized";
-  const canFinalize = loaded?.canApprove && !finalized && !!report?.previewHash
-    && report.period.slice(0, 7) < currentMonth && !mustReload;
+  const canFinalize = loaded?.canApprove && !finalized && report?.canFinalize
+    && !report.hasErrors && !!report.previewHash && !mustReload;
 
   // Quotes all CSV cells and neutralizes spreadsheet formulas in member names and report headings.
   function downloadCsv() {
@@ -42,7 +42,7 @@ export function CeepReport({ initialMonth, currentMonth }: { initialMonth: strin
       [],
       ["RecNo", "M.NO", "Full name", ...ceepAmountColumns.map(([, label]) => label)],
       ...ceepRows(report),
-      ["Totals", "", "", ...ceepAmountColumns.map(([key]) => ceepAmount(report.totals[key]))],
+      ["Totals", "", "", ...ceepTotals(report)],
     ];
     const csv = rows.map((row) => row.map((cell) => {
       const text = /^[\s]*[=+@-]/.test(cell) && !/^-\d[\d,.]*$/.test(cell) ? `'${cell}` : cell;
