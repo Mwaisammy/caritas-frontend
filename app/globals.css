@@ -184,6 +184,10 @@
 }
 
 @media print {
+  html:has(.ceep-print) {
+    page: ceep;
+  }
+
   body * {
     visibility: hidden;
   }
@@ -198,5 +202,63 @@
     inset: 0;
     width: 100%;
     box-shadow: none;
+  }
+
+  .ceep-print,
+  .ceep-print * {
+    visibility: visible;
+  }
+
+  .ceep-print {
+    page: ceep;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    color: black;
+    background: white;
+    --card: white;
+    --muted: #f3f3f3;
+    --muted-foreground: #444;
+    --border: #ccc;
+  }
+
+  .ceep-table-scroll {
+    overflow: visible;
+    max-height: none;
+  }
+
+  .ceep-table {
+    width: 100%;
+    font-size: 7pt;
+  }
+
+  .ceep-table thead {
+    display: table-header-group;
+    position: static;
+  }
+
+  .ceep-table tfoot {
+    display: table-row-group;
+  }
+
+  .ceep-table tr {
+    break-inside: avoid;
+  }
+
+  .ceep-table th,
+  .ceep-table td {
+    position: static;
+    min-width: 0;
+    padding: 4px;
+    white-space: normal;
+  }
+}
+
+@page ceep {
+  size: A3 landscape;
+  margin: 12mm;
+
+  @bottom-right {
+    content: "Page " counter(page);
   }
 }
