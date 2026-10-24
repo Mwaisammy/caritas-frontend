@@ -1,28 +1,27 @@
 import { z } from "zod";
 
-const amount = z.string().regex(/^-?\d+(\.\d+)?$/);
+const amount = z.string().regex(/^-?\d+(\.\d{1,4})?$/);
 const amounts = z.object({
   com: amount,
-  previousShares: amount,
+  previousShares: amount.nullable(),
   sharesPaid: amount,
-  totalShares: amount,
+  totalShares: amount.nullable(),
   lgom: amount,
   literature: amount,
   registration: amount,
-  groupRegistration: z.literal("0").default("0"),
+  groupRegistration: amount.nullable().transform((value) => value ?? "0"),
   lsf: amount,
-  principalDisbursed: amount,
-  loanPaid: amount,
-  loanBalance: amount,
-  interest: amount,
-  loanBalanceAfterPay: amount,
+  principalDisbursed: amount.nullable(),
+  principalPaid: amount,
+  loanBalance: amount.nullable(),
+  interestAssessed: amount.nullable(),
+  closingPrincipal: amount.nullable(),
   laptop: amount,
   penalty: amount,
-  totalAmt: amount,
+  totalPaid: amount,
 });
 
-// Provisional Struct mapping: the local backend has no CEEP implementation to confirm these keys.
-// Validate every handled amount so an incompatible response cannot silently display missing money as zero.
+// Matches caritas/internal/ceepdb/queries.sql; missing ledger history stays distinct from zero payments.
 export const ceepReportSchema = z.object({
   period: z.iso.date(),
   cutoff: z.iso.datetime({ offset: true }),
@@ -32,12 +31,13 @@ export const ceepReportSchema = z.object({
   parish: z.string(),
   status: z.enum(["draft", "finalized"]),
   previewHash: z.string().default(""),
+  canFinalize: z.boolean(),
+  hasErrors: z.boolean(),
   rows: z.array(amounts.extend({
     recNo: z.string().min(1),
-    memberNo: z.string().regex(/^\d+$/),
+    memberNumber: z.string().regex(/^\d+$/),
     fullName: z.string(),
   })),
-  totals: amounts,
 });
 
 // CEEPReport keeps the workspace and table on the same validated contract; separate types could drift.
@@ -55,17 +55,18 @@ export const ceepAmountColumns = [
   ["groupRegistration", "Group registration"],
   ["lsf", "LSF"],
   ["principalDisbursed", "Principal loan disbursed"],
-  ["loanPaid", "Monthly loan paid"],
+  ["principalPaid", "Monthly loan paid"],
   ["loanBalance", "Loan balance"],
-  ["interest", "Interest 1%"],
-  ["loanBalanceAfterPay", "Loan balance after pay"],
+  ["interestAssessed", "Interest 1%"],
+  ["closingPrincipal", "Loan balance after pay"],
   ["laptop", "Laptop"],
   ["penalty", "Penalty"],
-  ["totalAmt", "Total Amt"],
+  ["totalPaid", "Total Amt"],
 ] as const;
 
 // Decimal-text rounding avoids losing ledger precision through Number conversion; stored values are never changed.
-export function ceepAmount(value: string) {
+export function ceepAmount(value: string | null) {
+  if (value === null) return "Unavailable";
   const negative = value.startsWith("-");
   const [whole, fraction = ""] = value.replace(/^-/, "").split(".");
   const digits = fraction.padEnd(3, "0");
@@ -78,11 +79,26 @@ export function ceepAmount(value: string) {
 // Both exports use the same formatted cells; saved report references are preserved and member numbers remain text.
 export function ceepRows(report: CEEPReport) {
   return [...report.rows]
-    .sort((a, b) => BigInt(a.memberNo) < BigInt(b.memberNo) ? -1 : BigInt(a.memberNo) > BigInt(b.memberNo) ? 1 : 0)
+    .sort((a, b) => BigInt(a.memberNumber) < BigInt(b.memberNumber) ? -1 : BigInt(a.memberNumber) > BigInt(b.memberNumber) ? 1 : 0)
     .map((row) => [
       row.recNo,
-      row.memberNo.padStart(3, "0"),
+      row.memberNumber.padStart(3, "0"),
       row.fullName,
       ...ceepAmountColumns.map(([key]) => ceepAmount(row[key])),
     ]);
+}
+
+// The backend supplies rows, not totals. Sum all four stored decimal places before display rounding;
+// a column with missing history cannot have a trustworthy total.
+export function ceepTotals(report: CEEPReport) {
+  return ceepAmountColumns.map(([key]) => {
+    const values = report.rows.map((row) => row[key]);
+    if (values.some((value) => value === null)) return "Unavailable";
+    const total = values.reduce((sum, value) => {
+      const [whole, fraction = ""] = value!.split(".");
+      return sum + BigInt(`${whole}${fraction.padEnd(4, "0")}`);
+    }, BigInt(0));
+    const absolute = total < BigInt(0) ? -total : total;
+    return ceepAmount(`${total < BigInt(0) ? "-" : ""}${absolute / BigInt(10000)}.${(absolute % BigInt(10000)).toString().padStart(4, "0")}`);
+  });
 }
