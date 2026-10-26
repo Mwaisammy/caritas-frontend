@@ -50,7 +50,14 @@ export default async function NewLoanPage({
           </p>
         </section>
         {member ? (
-          existingLoan ? (
+          member.status !== "MEMBER_STATUS_ACTIVE" ? (
+            <Alert>
+              <AlertTitle>Active membership required</AlertTitle>
+              <AlertDescription>
+                This member must be activated before applying for a loan.
+              </AlertDescription>
+            </Alert>
+          ) : existingLoan ? (
             <Alert>
               <AlertTitle>
                 Existing loan: {loanLabel(existingLoan.status)}
