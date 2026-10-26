@@ -53,6 +53,8 @@ export async function openShareAccountAction(_previous: ShareActionState, formDa
     revalidatePath("/dashboard/shares");
     return {ok: true, message: "Share account opened successfully.", accountId: result.accountId};
   } catch (error) {
+    if (error instanceof GoApiError && error.detail === "member must be active before opening a share account")
+      return {ok: false, message: "This member must be activated before opening a share account. Refresh their details after activation."};
     return failure(error);
   }
 }

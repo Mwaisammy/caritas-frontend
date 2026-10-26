@@ -89,7 +89,10 @@ export function ReceiptStep({
   state: Extract<CashMutationState, { ok: true }>;
 }) {
   const [refreshed, setRefreshed] = useState(state.receipt);
-  const [details, setDetails] = useState(state);
+  const [details, setDetails] = useState<Extract<
+    CashMutationState,
+    { ok: true }
+  > | null>(null);
   const [statusError, setStatusError] = useState("");
   const [loadingDetails, startDetails] = useTransition();
   const [checking, startChecking] = useTransition();
@@ -117,7 +120,7 @@ export function ReceiptStep({
       ? details.shareBalance
       : undefined;
   const member =
-    (details.receipt?.id === receipt.id ? details.member : undefined) ??
+    (details?.receipt?.id === receipt.id ? details.member : undefined) ??
     (memberState?.member.id === receipt.memberId
       ? memberState.member
       : undefined);
@@ -415,7 +418,12 @@ export function ReceiptStep({
         Session reference: {receipt.sessionId}
       </p>
       <div className="flex flex-wrap gap-2 print:hidden">
-        <Button onClick={() => window.print()}>
+        <Button
+          disabled={Boolean(printDisabledReason)}
+          onClick={() => {
+            if (!printDisabledReason) window.print();
+          }}
+        >
           <PrinterIcon data-icon="inline-start" />
           Print receipt
         </Button>
