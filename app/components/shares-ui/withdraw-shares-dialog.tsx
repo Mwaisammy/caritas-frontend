@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { LoaderCircle, ArrowUpFromLine } from "lucide-react";
 
 import type { ShareActionState } from "@/app/dashboard/shares/actions";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -25,6 +24,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
+import { ShareFeedback } from "./form-parts";
 
 function formatWithdrawAmount(value: string) {
   return `KES ${new Intl.NumberFormat("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(value))}`;
@@ -163,14 +163,7 @@ export function WithdrawSharesDialog({
               )}
             </Field>
           </FieldGroup>
-          {showFeedback && !pending && state && (
-            <Alert
-              variant={state.ok ? "default" : "destructive"}
-              role={state.ok ? "status" : "alert"}
-            >
-              <AlertDescription>{state.message}</AlertDescription>
-            </Alert>
-          )}
+          {showFeedback && !pending ? <ShareFeedback state={state} /> : null}
           {retry && (
             <p className="text-sm text-muted-foreground">
               Outcome not confirmed. Retry these same details before starting

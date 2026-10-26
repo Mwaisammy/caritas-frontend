@@ -5,13 +5,13 @@ import {useActionState, useState} from "react";
 import {useRouter} from "next/navigation";
 import {LoaderCircle, Minus, Plus, SlidersHorizontal} from "lucide-react";
 import type {ShareActionState} from "@/app/dashboard/shares/actions";
-import {Alert, AlertDescription} from "@/components/ui/alert";
 import {Button} from "@/components/ui/button";
 import {Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger} from "@/components/ui/dialog";
 import {Field, FieldDescription, FieldError, FieldGroup, FieldLabel} from "@/components/ui/field";
 import {Textarea} from "@/components/ui/textarea";
 import {ToggleGroup, ToggleGroupItem} from "@/components/ui/toggle-group";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";
+import {ShareFeedback} from "./form-parts";
 
 // CreateAdjustmentDialog gathers the amount and reason for a separately approved correction.
 export function CreateAdjustmentDialog({accountId, submitAction}: {
@@ -114,11 +114,7 @@ export function CreateAdjustmentDialog({accountId, submitAction}: {
               {errors?.reason && <FieldError id="adjustment-reason-error">{errors.reason[0]}</FieldError>}
             </Field>
           </FieldGroup>
-          {showFeedback && !pending && state && (
-            <Alert variant={state.ok ? "default" : "destructive"} role={state.ok ? "status" : "alert"}>
-              <AlertDescription>{state.message}</AlertDescription>
-            </Alert>
-          )}
+          {showFeedback && !pending ? <ShareFeedback state={state} /> : null}
           <DialogFooter>
             <DialogClose render={<Button variant="outline" disabled={pending} />}>
               {state?.ok ? "Done" : "Cancel"}

@@ -6,7 +6,6 @@ import type { Member } from "@/lib/go-api-client";
 import { LoaderCircle, Plus, X } from "lucide-react";
 
 import { openShareAccountAction } from "@/app/dashboard/shares/actions";
-import { toast } from "@/components/ui/toast";
 import { ShareFeedback, ShareFieldError } from "./form-parts";
 import { useRouter } from "next/navigation";
 
@@ -19,7 +18,6 @@ export function OpenAccountDialog({ member }: { member?: Member }) {
   useEffect(() => {
     if (!state?.ok || !state.accountId) return;
     dialogRef.current?.close();
-    toast.add({ title: "Redirecting to your account", type: "success" });
     router.push(`/dashboard/shares/${encodeURIComponent(state.accountId)}`);
   }, [state, router]);
 
