@@ -31,6 +31,7 @@ import {OpenTillStep} from "./open-till-step";
 import {ReceiptStep} from "./receipt-step";
 import {ReviewContributionStep} from "./review-contribution-step";
 import {AlertTriangle} from "lucide-react";
+import {toast} from "@/components/ui/toast";
 
 // CashStep names only rendered stages; removing it allows transitions to screens this flow cannot display.
 type CashStep = "till" | "member" | "entry" | "review" | "receipt" | "close";
@@ -121,6 +122,18 @@ export function CashContributionFlow() {
     }
     return result;
   }, null);
+  useEffect(() => {
+    if (
+      !openState ||
+      (!openState.ok && Object.keys(openState.fieldErrors ?? {}).length > 0)
+    ) return;
+    toast.add({
+      title: openState.ok ? "Till opened" : "Could not open till",
+      description: openState.message,
+      type: openState.ok ? "success" : openState.retry ? "warning" : "error",
+      priority: openState.ok ? "low" : "high",
+    });
+  }, [openState]);
   const [closeState, closeAction, closing] = useActionState(
     async (previous: CashMutationState, data: FormData) => {
       const result = await closeCashierSessionAction(previous, data);
@@ -129,6 +142,34 @@ export function CashContributionFlow() {
     },
     null,
   );
+  useEffect(() => {
+    if (
+      !closeState ||
+      (!closeState.ok && Object.keys(closeState.fieldErrors ?? {}).length > 0)
+    ) return;
+    toast.add({
+      title: closeState.ok ? "Till closed" : "Could not close till",
+      description: closeState.message,
+      type: closeState.ok ? "success" : closeState.retry ? "warning" : "error",
+      priority: closeState.ok ? "low" : "high",
+    });
+  }, [closeState]);
+  useEffect(() => {
+    if (
+      !recordState ||
+      (!recordState.ok && Object.keys(recordState.fieldErrors ?? {}).length > 0)
+    ) return;
+    toast.add({
+      title: recordState.ok
+        ? "Contribution recorded"
+        : recordState.retry
+          ? "Payment needs confirmation"
+          : "Contribution failed",
+      description: recordState.message,
+      type: recordState.ok ? "success" : recordState.retry ? "warning" : "error",
+      priority: recordState.ok ? "low" : "high",
+    });
+  }, [recordState]);
 
   const recordAction = (data: FormData) =>
     startRecording(async () => {

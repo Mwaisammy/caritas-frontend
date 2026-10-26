@@ -1,7 +1,8 @@
 import Link from "next/link";
-import {AlertCircle, CheckCircle2} from "lucide-react";
+import {useEffect} from "react";
 
 import type {MemberActionState} from "../actions";
+import {toast} from "@/components/ui/toast";
 
 export type FieldErrors = Record<string, string[] | undefined>;
 
@@ -29,16 +30,21 @@ export function FieldError({errors, name, id}: {errors?: FieldErrors; name: stri
   return errors?.[name]?.[0] ? <p className="mt-1 text-xs text-red-700" id={id ?? `${name}-error`}>{errors[name]?.[0]}</p> : null;
 }
 
+// Feedback announces completed member actions while keeping profile navigation beside the form.
 export function Feedback({state}: {state: MemberActionState}) {
-  if (!state) return null;
-  const message = state.ok ? state.data.message : state.error.message;
-  return (
-    <div className={`flex gap-3 rounded-xl border p-3 text-sm ${state.ok ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-800"}`} role={state.ok ? "status" : "alert"}>
-      {state.ok ? <CheckCircle2 className="mt-0.5 size-4 shrink-0" /> : <AlertCircle className="mt-0.5 size-4 shrink-0" />}
-      <div>
-        <p>{message}</p>
-        {state.ok && state.data.memberId ? <Link className="mt-1 inline-block font-semibold underline" href={`/dashboard/members/${state.data.memberId}`}>View member profile</Link> : null}
-      </div>
-    </div>
-  );
+  useEffect(() => {
+    if (
+      !state ||
+      (!state.ok && Object.keys(state.error.fieldErrors ?? {}).length > 0)
+    ) return;
+    toast.add({
+      title: state.ok ? "Completed" : "Action failed",
+      description: state.ok ? state.data.message : state.error.message,
+      type: state.ok ? "success" : "error",
+      priority: state.ok ? "low" : "high",
+    });
+  }, [state]);
+
+  if (!state?.ok || !state.data.memberId) return null;
+  return <Link className="inline-block font-semibold underline" href={`/dashboard/members/${state.data.memberId}`}>View member profile</Link>;
 }

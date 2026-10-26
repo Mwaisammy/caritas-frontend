@@ -20,7 +20,6 @@ export function OpenAccountDialog({ member }: { member?: Member }) {
   useEffect(() => {
     if (!state?.ok || !state.accountId) return;
     dialogRef.current?.close();
-    toast.add({ title: "Redirecting to your account", type: "success" });
     router.push(`/dashboard/shares/${encodeURIComponent(state.accountId)}`);
   }, [state, router]);
 
