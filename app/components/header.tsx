@@ -42,7 +42,7 @@ const Header = ({ user }: HeaderProps) => {
       : section.charAt(0).toUpperCase() + section.slice(1);
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between gap-4 border-b bg-white/95 px-4 py-4 text-black backdrop-blur sm:px-6">
+    <header className="sticky top-0 z-30 flex items-center justify-between gap-4 border-b bg-white/95 px-4 py-8 text-black backdrop-blur sm:px-6 mb-3">
       <div className="flex min-w-0 items-center gap-3">
         <SidebarTrigger className="shrink-0" />
         <h1 className="truncate text-sm font-bold sm:text-xl md:text-2xl">

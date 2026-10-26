@@ -1,4 +1,5 @@
 import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
+import {Badge} from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -8,7 +9,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {Loan} from "@/lib/go-api-client";
-import {Badge} from "lucide-react";
 import {
   formatLoanDate,
   formatLoanMoney,
@@ -16,13 +16,8 @@ import {
   loanMoneyUnits,
 } from "./loan-badges";
 
-export function LoanSummary({
-  loan,
-}: {
-  loan: Loan;
-  previousStatus: string;
-  lastUpdated: string;
-}) {
+// Keeps settlement, current interest and future estimates distinct in the loan summary.
+export function LoanSummary({loan}: {loan: Loan}) {
   const financial = loan.financialSummary;
   const payable = [
     "LOAN_STATUS_ACTIVE",
@@ -41,34 +36,6 @@ export function LoanSummary({
     timeZone: "Africa/Nairobi",
   });
 
-  // const cards = [
-  //   {
-  //     label: "Principal",
-  //     value: formatLoanMoney(loan.principal),
-  //     detail: "Original requested amount",
-  //     icon: WalletCards,
-  //   },
-  //   {
-  //     label: "Interest rate",
-  //     value: `${Number(loan.interestRate)}%`,
-  //     detail: "Annual percentage rate",
-  //     icon: Wallet,
-  //   },
-  //   {
-  //     label: "Repayment term",
-  //     value: `${loan.repaymentPeriodMonths} months`,
-  //     detail: `Applied ${formatLoanDate(loan.createdAt)}`,
-  //     icon: Clock3,
-  //   },
-  //   {
-  //     label: "Last status change",
-  //     value: formatLoanDate(lastUpdated, true),
-  //     detail: previousStatus
-  //       ? `From ${loanLabel(previousStatus)}`
-  //       : "No previous status",
-  //     icon: CalendarDays,
-  //   },
-  // ];
   return (
     <section
       className="flex flex-col gap-5"
@@ -79,26 +46,20 @@ export function LoanSummary({
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {[
               {
-                label: "Total to settle this month",
+                label: "Settlement balance",
                 amount: financial.totalOutstanding,
-                detail:
-                  "Unpaid principal + interest + penalties",
               },
               {
-                label: "Principal still unpaid",
+                label: "Principal outstanding",
                 amount: financial.principalOutstanding,
-                detail: `Original principal: ${formatLoanMoney(loan.principal)}`,
               },
               {
-                label: "Interest payable now",
+                label: "Interest due",
                 amount: financial.interestOutstanding,
-                detail: `${formatLoanRate(loan.interestRate)} monthly, on opening unpaid principal.`,
               },
               {
-                label: "Available overpayment credit",
+                label: "Available credit",
                 amount: financial.availableCredit,
-                detail:
-                  "Member funds from this loan. Not automatically applied or refunded.",
               },
             ].map((item) => (
               <Card key={item.label}>
@@ -110,67 +71,58 @@ export function LoanSummary({
                     {formatLoanMoney(item.amount)}
                   </p>
                 </CardContent>
-                <CardFooter>
-                  <p className="text-xs text-muted-foreground">{item.detail}</p>
-                </CardFooter>
               </Card>
             ))}
           </div>
           {payable && settled ? (
             <Alert variant="destructive">
               <AlertTitle>
-                Balances are settled, but the loan is still open
+                Loan still open
               </AlertTitle>
               <AlertDescription>
-                Refresh and review the payment ledger and closure audit. Do not
-                collect another payment or force the status closed to resolve
-                this discrepancy.
+                Balance is settled. Review closure before collecting another payment.
               </AlertDescription>
             </Alert>
           ) : loan.status === "LOAN_STATUS_CLOSED" ? (
             <Alert>
               <AlertTitle>Loan closed</AlertTitle>
               <AlertDescription>
-                The repayment workflow closes a settled loan and releases its
-                loan security. Any available overpayment remains the member’s
-                credit.
+                Any remaining credit belongs to the member.
               </AlertDescription>
             </Alert>
           ) : null}
           <div className="grid gap-4 lg:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle>What the member needs to pay</CardTitle>
+                <CardTitle>Settlement breakdown</CardTitle>
                 <CardDescription>
-                  For{" "}
                   {new Date(
                     `${financial.asOfPeriod}T12:00:00Z`,
                   ).toLocaleDateString("en-KE", {
                     month: "long",
                     year: "numeric",
                   })}
-                  . Rechecked when repayment posts.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-                  <dt>Principal outstanding</dt>
+                  <dt>Principal</dt>
                   <dd className="text-right tabular-nums">
                     {formatLoanMoney(financial.principalOutstanding)}
                   </dd>
-                  <dt>Assessed interest still unpaid</dt>
+                  <dt>Assessed interest</dt>
                   <dd className="text-right tabular-nums">
                     {formatLoanMoney(financial.assessedInterestOutstanding)}
                   </dd>
-                  <dt>Additional interest on payment this month</dt>
+                  <dt>Unposted interest</dt>
                   <dd className="text-right tabular-nums">
                     {formatLoanMoney(financial.unpostedInterest)}
                   </dd>
-                  <dt>Unpaid penalties</dt>
+                  <dt>Penalties</dt>
                   <dd className="text-right tabular-nums">
                     {formatLoanMoney(financial.penaltyOutstanding)}
                   </dd>
-                  <dt className="font-semibold">Total to settle</dt>
+                  <dt className="font-semibold">Total settlement</dt>
                   <dd className="text-right font-semibold tabular-nums">
                     {formatLoanMoney(financial.totalOutstanding)}
                   </dd>
@@ -178,9 +130,7 @@ export function LoanSummary({
               </CardContent>
               <CardFooter>
                 <p className="text-xs text-muted-foreground">
-                  This is the full settlement amount, not the next principal
-                  installment. Interest already paid is not charged again for
-                  the same month.
+                  Full settlement, not the next installment.
                 </p>
               </CardFooter>
             </Card>
@@ -196,29 +146,13 @@ export function LoanSummary({
                 <p className="text-3xl font-semibold tabular-nums">
                   {formatLoanMoney(payable ? financial.nextMonthInterest : "0")}
                 </p>
-                <Badge>Estimate if no further principal is paid</Badge>
-                <p className="text-sm text-muted-foreground">
-                  {formatLoanMoney(financial.principalOutstanding)} unpaid
-                  principal × {formatLoanRate(loan.interestRate)} monthly rate.
-                  Paying principal before next month reduces this amount. Fully
-                  repaid principal earns no further interest.
-                </p>
+                <Badge variant="outline">Estimate if principal stays unchanged</Badge>
               </CardContent>
-              <CardFooter>
-                <p className="text-xs text-muted-foreground">
-                  Interest uses the month’s opening unpaid principal. This
-                  estimate is separate from interest payable now.
-                </p>
-              </CardFooter>
             </Card>
           </div>
           <Card>
             <CardHeader>
-              <CardTitle>Where the repayments went</CardTitle>
-              <CardDescription>
-                All posted repayments for this loan, across every page of
-                history.
-              </CardDescription>
+              <CardTitle>Repayment totals</CardTitle>
             </CardHeader>
             <CardContent>
               <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
@@ -227,7 +161,7 @@ export function LoanSummary({
                   ["Principal paid", financial.principalPaid],
                   ["Interest paid", financial.interestPaid],
                   ["Penalties paid", financial.penaltyPaid],
-                  ["Overpayment credit created", financial.overpayment],
+                  ["Credit created", financial.overpayment],
                 ].map(([label, amount]) => (
                   <div key={label}>
                     <dt className="text-xs text-muted-foreground">{label}</dt>
@@ -238,28 +172,20 @@ export function LoanSummary({
                 ))}
               </dl>
             </CardContent>
-            <CardFooter>
-              <p className="text-xs text-muted-foreground">
-                Each repayment pays penalties, then interest, then principal.
-                Any excess becomes member credit. Credit already used or
-                reserved is detailed below.
-              </p>
-            </CardFooter>
           </Card>
         </>
       ) : loan.disbursedAt ? (
         <Alert variant="destructive">
-          <AlertTitle>Financial balances unavailable</AlertTitle>
+          <AlertTitle>Balances unavailable</AlertTitle>
           <AlertDescription>
-            Current debt and credit could not be confirmed. Do not treat missing
-            figures as zero.
+            Current balances could not be confirmed. Missing figures are not zero.
           </AlertDescription>
         </Alert>
       ) : (
         <Alert>
           <AlertTitle>Loan not yet disbursed</AlertTitle>
           <AlertDescription>
-            No repayment is due before disbursement. Requested principal:{" "}
+            No repayment due. Requested principal:{" "}
             {formatLoanMoney(loan.principal)}.
           </AlertDescription>
         </Alert>
@@ -267,14 +193,11 @@ export function LoanSummary({
       {(loanMoneyUnits(loan.interestRate) ?? BigInt(0)) >= BigInt(10_000) ? (
         <Alert variant="destructive">
           <AlertTitle>
-            Review the stored monthly interest rate:{" "}
+            Review monthly interest rate:{" "}
             {formatLoanRate(loan.interestRate)}
           </AlertTitle>
           <AlertDescription>
-            This loan’s stored rate is charged as displayed. Earlier percentage
-            entry could store 1% as 100%. Confirm the agreed terms and use an
-            approved, audited correction; historical payments have not been
-            rewritten.
+            Confirm the agreed rate. Any correction requires approval and an audit record.
           </AlertDescription>
         </Alert>
       ) : null}
@@ -284,7 +207,7 @@ export function LoanSummary({
           {formatLoanRate(loan.interestRate)} monthly ·{" "}
           {loan.repaymentPeriodMonths} months
         </p>
-        <p>Loan last updated {formatLoanDate(loan.updatedAt, true)}</p>
+        <p>Updated {formatLoanDate(loan.updatedAt, true)}</p>
       </div>
     </section>
   );

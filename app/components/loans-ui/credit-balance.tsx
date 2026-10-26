@@ -167,8 +167,7 @@ export function CreditBalance({
       <CardHeader>
         <CardTitle>Member credit</CardTitle>
         <CardDescription>
-          Overpayments belong to the member. Use them only with a recorded
-          instruction.
+          Recorded member instruction required.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
@@ -195,17 +194,11 @@ export function CreditBalance({
                 load(credit);
               }}
             >
-              Use credit and view history
+              Manage credit
             </Button>
           </div>
         ))}
       </CardContent>
-      <CardFooter>
-        <p className="text-sm text-muted-foreground">
-          Transfers into shares are share purchases. Refund requests reserve
-          funds until reviewed and settled.
-        </p>
-      </CardFooter>
       <Dialog
         open={Boolean(selected)}
         onOpenChange={(open) => {
@@ -214,10 +207,10 @@ export function CreditBalance({
       >
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle>Credit instructions and history</DialogTitle>
+            <DialogTitle>Manage credit</DialogTitle>
             <DialogDescription>
-              Choose how to use the member’s available credit. Refunds require
-              another officer’s approval; payouts are verified separately.
+              Share transfers create purchases. Refunds reserve funds and require
+              another officer’s approval and verified payout.
             </DialogDescription>
           </DialogHeader>
           {feedback ? (
