@@ -17,9 +17,6 @@ export function PaymentHistory({
       <div className="flex items-center justify-between border-b px-5 py-4">
         <div>
           <h2 className="font-semibold">Payment history</h2>
-          <p className="mt-1 text-xs text-stone-500">
-            Every payment shows its principal, interest, penalty and overpayment allocation.
-          </p>
         </div>
         <ReceiptText className="size-5 text-stone-400" />
       </div>
@@ -58,7 +55,7 @@ export function PaymentHistory({
         </div>
       ) : (
         <p className="p-10 text-center text-sm text-stone-500">
-          No payment transactions have been recorded.
+          No payments recorded.
         </p>
       )}
       {nextHref ? (

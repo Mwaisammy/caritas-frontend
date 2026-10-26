@@ -60,7 +60,7 @@ function AddGuarantorDialog({loan}: {loan: Loan}) {
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Add guarantor</DialogTitle>
-          <DialogDescription>A guarantor can offer their current shares minus all active pledges. Shares are reserved when the guarantee is approved.</DialogDescription>
+          <DialogDescription>Available shares exclude existing pledges. Approval reserves the guaranteed amount.</DialogDescription>
         </DialogHeader>
         {open ? <AddGuarantorForm loan={loan} onAdded={() => setOpen(false)} /> : null}
       </DialogContent>
@@ -80,19 +80,18 @@ export function GuarantorList({loan, guarantors, nextHref}: {loan: Loan; guarant
       </div>
       {canChange || loan.status === "LOAN_STATUS_APPROVED" ? (
         <Alert>
-          <AlertTitle>Loan security coverage</AlertTitle>
+          <AlertTitle>Security coverage</AlertTitle>
           <AlertDescription>
             <dl className="grid grid-cols-2 gap-x-3 gap-y-1">
               <dt>Principal</dt><dd>{formatLoanMoney(loan.principal)}</dd>
               <dt>Applicant pledge</dt><dd>{formatLoanMoney(loan.applicantSharePledge)}</dd>
               <dt>Approved guarantees</dt><dd>{formatLoanMoney(loan.approvedGuarantorCoverage)}</dd>
-              <dt>Remaining shortfall</dt><dd>{formatLoanMoney(loan.collateralShortfall)}</dd>
+              <dt>Shortfall</dt><dd>{formatLoanMoney(loan.collateralShortfall)}</dd>
             </dl>
-            <p>Pending guarantees do not count. Approve enough security to cover the principal; extra pending guarantors do not block loan approval. Eligibility and active security are checked again before disbursement.</p>
+            <p>Only approved guarantees count toward coverage.</p>
           </AlertDescription>
         </Alert>
       ) : null}
-      <p className="text-sm text-muted-foreground">A guarantor can offer their current shares minus all active pledges. Approval reserves the guaranteed amount.</p>
       {guarantors.length ? guarantors.map((item) => (
         <div key={item.guarantorId} className="flex flex-col gap-3 rounded-xl border p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -111,7 +110,7 @@ export function GuarantorList({loan, guarantors, nextHref}: {loan: Loan; guarant
           ) : null}
         </div>
       )) : (
-        <Empty><EmptyHeader><EmptyTitle>No guarantors attached</EmptyTitle><EmptyDescription>Guarantors are optional when applicant security covers the principal.</EmptyDescription></EmptyHeader></Empty>
+        <Empty><EmptyHeader><EmptyTitle>No guarantors</EmptyTitle><EmptyDescription>Optional when applicant security covers the principal.</EmptyDescription></EmptyHeader></Empty>
       )}
       {nextHref ? <Button variant="outline" render={<Link href={nextHref} />}>More guarantors<ArrowRight data-icon="inline-end" /></Button> : null}
     </section>

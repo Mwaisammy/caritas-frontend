@@ -31,7 +31,8 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
-
+import Image from "next/image";
+import caritasLogo from "@/public/caritas-logo.png"
 const mainMenu = [
   {
     title: "Dashboard",
@@ -104,25 +105,16 @@ export default function AppSidebar({ user }: AppSidebarProps) {
   return (
     <Sidebar className="border-r bg-white">
       {/* Header */}
-      <SidebarHeader className="border-b px-5 py-6">
-        {/* <Image
-          src="/caritas-logo.png"
-          alt="Caritas"
-          width={180}
-          height={60}
-          priority
-        /> */}
-        LOGO
-        <div className="relative mt-5">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-
-          <input
-            type="text"
-            placeholder="Search..."
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2 pl-10 pr-4 text-sm focus:border-red-800 focus:outline-none"
-          />
-        </div>
-      </SidebarHeader>
+   <SidebarHeader className="flex mr-auto border-b px-3">
+  <Image
+    src={caritasLogo}
+    alt="Caritas Sagana"
+    width={500}
+    height={300}
+    className="w-[240px] h-auto object-contain -ml-3"
+    priority
+  />
+</SidebarHeader>
 
       {/* Content */}
       <SidebarContent>
