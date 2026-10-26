@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import {OpenAccountDialog} from "@/app/components/shares-ui/open-account-dialog";
+import {Button} from "@/components/ui/button";
 import {GoApiError} from "@/lib/server/go-api";
 import {getMember, getMemberStatusHistory} from "@/lib/server/members-api";
 import {MEMBER_BRANCH_ID} from "../config";
@@ -391,12 +392,23 @@ export default async function MemberDetailsPage({
                 </>
               )}
 
-              <Link
-                className={buttonClass("outline")}
-                href={`/dashboard/loans/new?memberId=${encodeURIComponent(member.id)}`}
-              >
-                Apply for loan
-              </Link>
+              {member.status === "MEMBER_STATUS_ACTIVE" ? (
+                <Link
+                  className={buttonClass("outline")}
+                  href={`/dashboard/loans/new?memberId=${encodeURIComponent(member.id)}`}
+                >
+                  Apply for loan
+                </Link>
+              ) : (
+                <>
+                  <Button disabled variant="outline">
+                    Apply for loan
+                  </Button>
+                  <p className="text-sm text-muted-foreground">
+                    This member must be activated before applying for a loan.
+                  </p>
+                </>
+              )}
             </section>
             <MemberLifecycleForms member={member} />
           </aside>

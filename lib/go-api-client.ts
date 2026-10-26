@@ -245,6 +245,7 @@ export interface ContributionLoanSummary {
   interestRemaining: string;
   principalRemaining: string;
   payable: boolean;
+  installmentDue?: string;
 }
 
 // The status union keeps filters and badges aligned with the share service contract.
