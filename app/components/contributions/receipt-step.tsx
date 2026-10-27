@@ -115,10 +115,24 @@ export function ReceiptStep({
   const completed = receipt.status === "completed";
   const pending =
     receipt.status === "pending" || receipt.status === "processing";
-  const shareBalance =
-    details.receipt?.id === receipt.id && details.receipt.status === "completed"
-      ? details.shareBalance
-      : undefined;
+  const allocations = receipt.allocations ?? [];
+  const allocationsCompleted =
+    completed && allocations.length > 0 &&
+    allocations.every((item) => item.status === "completed");
+  const detailsReady = details?.receipt === receipt;
+  const needsShareBalance = allocations.some(
+    (item) => item.type === "CONTRIBUTION_ALLOCATION_TYPE_SHARE_PURCHASE",
+  );
+  const shareBalance = detailsReady && completed ? details?.shareBalance : undefined;
+  const printDisabledReason = !allocationsCompleted
+    ? pending ? "Allocations are still processing." : "Allocations require review."
+    : loadingDetails || checking
+      ? "Loading receipt details..."
+      : !detailsReady
+        ? "Receipt details unavailable. Retry before printing."
+        : needsShareBalance && !shareBalance
+          ? "Share balance unavailable. Retry before printing."
+          : "";
   const member =
     (details?.receipt?.id === receipt.id ? details.member : undefined) ??
     (memberState?.member.id === receipt.memberId
@@ -144,36 +158,41 @@ export function ReceiptStep({
               ? " Processing will retry automatically. Check the status to see the result."
               : " Ask a manager to review this receipt."}
           </AlertDescription>
-          {pending ? (
-            <Button
-              variant="outline"
-              disabled={checking}
-              onClick={() =>
-                startChecking(async () => {
-                  setStatusError("");
-                  try {
-                    const result = await recoverCashReceiptAction({
-                      receiptId: receipt.id,
-                    });
-                    if (result?.ok && result.receipt)
-                      setRefreshed(result.receipt);
-                    else
-                      setStatusError(
-                        result?.message ?? "Unable to check receipt status.",
-                      );
-                  } catch {
-                    setStatusError(
-                      "Unable to check receipt status. Try again.",
-                    );
-                  }
-                })
-              }
-            >
-              {checking ? "Checking..." : "Check allocation status"}
-            </Button>
-          ) : null}
-          {statusError ? <p role="alert">{statusError}</p> : null}
         </Alert>
+      ) : null}
+      {printDisabledReason ? (
+        <div className="flex flex-col gap-2 print:hidden">
+          <p role="status">{printDisabledReason}</p>
+          <Button
+            variant="outline"
+            disabled={checking || loadingDetails}
+            onClick={() =>
+              startChecking(async () => {
+                setStatusError("");
+                try {
+                  const result = await recoverCashReceiptAction({
+                    receiptId: receipt.id,
+                  });
+                  if (result?.ok && result.receipt)
+                    setRefreshed(result.receipt);
+                  else
+                    setStatusError(
+                      result?.message ?? "Unable to check receipt status.",
+                    );
+                } catch {
+                  setStatusError("Unable to check receipt status. Try again.");
+                }
+              })
+            }
+          >
+            {checking
+              ? "Checking..."
+              : allocationsCompleted
+                ? "Retry receipt details"
+                : "Check allocation status"}
+          </Button>
+          {statusError ? <p role="alert">{statusError}</p> : null}
+        </div>
       ) : null}
       <article className="cash-receipt" aria-label="Cash contribution receipt">
         <header className="receipt-heading">
@@ -267,7 +286,9 @@ export function ReceiptStep({
                     <small>At lookup · not a receipt-time balance</small>
                   </TableCell>
                   <TableCell>
-                    {completed ? (
+                    {!needsShareBalance ? (
+                      "Not applicable"
+                    ) : completed ? (
                       loadingDetails ? (
                         <>
                           <Skeleton className="ml-auto h-4 w-24 print:hidden" />
