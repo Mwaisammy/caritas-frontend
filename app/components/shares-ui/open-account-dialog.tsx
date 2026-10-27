@@ -6,7 +6,6 @@ import type { Member } from "@/lib/go-api-client";
 import { LoaderCircle, Plus, X } from "lucide-react";
 
 import { openShareAccountAction } from "@/app/dashboard/shares/actions";
-import { toast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { ShareFeedback, ShareFieldError } from "./form-parts";
 import { useRouter } from "next/navigation";
