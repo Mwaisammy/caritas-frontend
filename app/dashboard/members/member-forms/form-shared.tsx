@@ -38,8 +38,10 @@ export function Feedback({state}: {state: MemberActionState}) {
       (!state.ok && Object.keys(state.error.fieldErrors ?? {}).length > 0)
     ) return;
     toast.add({
-      title: state.ok ? "Completed" : "Action failed",
-      description: state.ok ? state.data.message : state.error.message,
+      title: state.ok ? "Member changes saved" : "Member changes not saved",
+      description: state.ok
+        ? state.data.message
+        : "Check the member details and try again.",
       type: state.ok ? "success" : "error",
       priority: state.ok ? "low" : "high",
     });

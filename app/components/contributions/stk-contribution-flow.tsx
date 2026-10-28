@@ -20,6 +20,7 @@ import {
 import { ContributionEntryStep } from "./contribution-entry-step";
 import { MemberLookupStep } from "./member-lookup-step";
 import { allocationLabel, emptyAmounts, formatDecimalMoney, formatMoney, type ContributionDraft } from "./contribution-utils";
+import { toast } from "@/components/ui/toast";
 
 // STKContributionFlow reuses member lookup and allocation entry, while retaining
 // one submitted snapshot until its payment and receipt outcomes are known.
@@ -120,6 +121,11 @@ export function STKContributionFlow({ onLockChange }: { onLockChange: (locked: b
         sessionStorage.setItem(`stk-submission:${context.staffId}`, JSON.stringify(Array.from(data.entries())));
       } catch {
         setState({ ok: false, message: "Enable browser storage before sending a payment request." });
+        toast.add({
+          title: "M-Pesa prompt not sent",
+          description: "Enable browser storage before sending the payment request.",
+          type: "error",
+        });
         return;
       }
       submission.current = data;
@@ -131,13 +137,34 @@ export function STKContributionFlow({ onLockChange }: { onLockChange: (locked: b
       setState(result);
       if (result?.ok) {
         setRequest(result.request);
+        toast.add({
+          title: retrying ? "Saved M-Pesa request found" : "M-Pesa prompt sent",
+          description: retrying
+            ? "The saved request was not sent again. Check its status before starting another payment."
+            : "Ask the member to enter their PIN on the phone receiving the prompt.",
+          type: "info",
+        });
       } else if (result?.definitive && !retrying) {
         sessionStorage.removeItem(`stk-submission:${context.staffId}`);
         submission.current = null;
         setSaved(false);
       }
+      if (result && !result.ok) {
+        toast.add({
+          title: result.definitive ? "M-Pesa prompt not sent" : "M-Pesa prompt needs confirmation",
+          description: result.definitive
+            ? "Check the phone number and contribution details, then try again."
+            : "We couldn't confirm whether the prompt was sent. Check status or retry this saved request; don't start another payment.",
+          type: result.definitive ? "error" : "warning",
+        });
+      }
     } catch {
       setState({ ok: false, message: "The result is unconfirmed. Check status before starting another payment." });
+      toast.add({
+        title: "M-Pesa prompt needs confirmation",
+        description: "We couldn't confirm whether the prompt was sent. Check status or retry this saved request; don't start another payment.",
+        type: "warning",
+      });
     }
   });
 
@@ -147,9 +174,55 @@ export function STKContributionFlow({ onLockChange }: { onLockChange: (locked: b
     try {
       const result = await checkSTKContributionAction(String(submission.current.get("idempotencyKey")), true);
       setState(result);
-      if (result?.ok) setRequest(result.request);
+      if (result?.ok) {
+        const current = result.request;
+        setRequest(current);
+        if (current.receipt?.status === "completed") {
+          toast.add({
+            title: "Contribution completed",
+            description: "Payment and required allocations are complete.",
+            type: "success",
+          });
+        } else if (
+          current.recoveryStatus === "received_needs_receipt" ||
+          current.receipt?.status === "failed" ||
+          current.receipt?.status === "manual_review"
+        ) {
+          toast.add({
+            title: "Payment received; review needed",
+            description: "Staff must reconcile the contribution before another payment is requested.",
+            type: "warning",
+          });
+        } else if (
+          current.status === "CONTRIBUTION_PAYMENT_REQUEST_STATUS_FAILED" &&
+          !current.receipt
+        ) {
+          toast.add({
+            title: "M-Pesa payment not completed",
+            description: "Confirm whether money was deducted before retrying the saved request.",
+            type: "error",
+          });
+        } else {
+          toast.add({
+            title: "Payment still awaiting confirmation",
+            description: "Check the phone receiving the prompt, then check the status again shortly.",
+            type: "info",
+          });
+        }
+      } else if (result) {
+        toast.add({
+          title: "Payment status unavailable",
+          description: "We couldn't confirm the payment yet. The saved request is retained; check again shortly.",
+          type: "warning",
+        });
+      }
     } catch {
       setState({ ok: false, message: "Unable to check status. Try again; the saved request is retained." });
+      toast.add({
+        title: "Payment status unavailable",
+        description: "We couldn't confirm the payment yet. The saved request is retained; check again shortly.",
+        type: "warning",
+      });
     }
   });
 
