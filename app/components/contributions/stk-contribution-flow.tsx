@@ -25,6 +25,7 @@ import { allocationLabel, emptyAmounts, formatDecimalMoney, formatMoney, type Co
 // one submitted snapshot until its payment and receipt outcomes are known.
 export function STKContributionFlow({ onLockChange }: { onLockChange: (locked: boolean) => void }) {
   const submission = useRef<FormData | null>(null);
+  const checking = useRef(false);
   const [context, setContext] = useState<CashContext | null>(null);
   const [startupError, setStartupError] = useState("");
   const [saved, setSaved] = useState(false);
@@ -42,12 +43,19 @@ export function STKContributionFlow({ onLockChange }: { onLockChange: (locked: b
     if (!saved || request?.receipt?.status === "completed") return;
     let active = true;
     const timer = setInterval(async () => {
-      if (!submission.current) return;
-      const result = await checkSTKContributionAction(String(submission.current.get("idempotencyKey")));
-      if (active && result?.ok) { setRequest(result.request); setState(result); }
+      if (!submission.current || checking.current || pending) return;
+      checking.current = true;
+      try {
+        const result = await checkSTKContributionAction(String(submission.current.get("idempotencyKey")));
+        if (active && result?.ok) { setRequest(result.request); setState(result); }
+      } catch {
+        if (active) setState({ ok: false, message: "Unable to check status. The saved request is retained." });
+      } finally {
+        checking.current = false;
+      }
     }, 5000);
     return () => { active = false; clearInterval(timer); };
-  }, [saved, request?.receipt?.status]);
+  }, [saved, request?.receipt?.status, pending]);
 
   useEffect(() => {
     let active = true;
@@ -143,13 +151,16 @@ export function STKContributionFlow({ onLockChange }: { onLockChange: (locked: b
 
   // Checking state never calls initiation or clears an uncertain request.
   const checkStatus = () => startPayment(async () => {
-    if (!submission.current) return;
+    if (!submission.current || checking.current) return;
+    checking.current = true;
     try {
       const result = await checkSTKContributionAction(String(submission.current.get("idempotencyKey")), true);
       setState(result);
       if (result?.ok) setRequest(result.request);
     } catch {
       setState({ ok: false, message: "Unable to check status. Try again; the saved request is retained." });
+    } finally {
+      checking.current = false;
     }
   });
 
@@ -159,6 +170,7 @@ export function STKContributionFlow({ onLockChange }: { onLockChange: (locked: b
   const needsReview = receipt?.status === "failed" || receipt?.status === "manual_review";
   const finished = completed || failed || needsReview;
   const title = completed ? "Contribution completed"
+    : request?.recoveryStatus === "not_sent" ? "Payment prompt was not sent"
     : request?.recoveryStatus === "received_needs_receipt" ? "M-Pesa confirms payment. Receipt needs reconciliation"
     : needsReview ? "Payment received. Contribution needs review"
     : receipt ? "Payment received. Processing contribution"
@@ -201,6 +213,7 @@ export function STKContributionFlow({ onLockChange }: { onLockChange: (locked: b
               : failed ? request?.failureReason || "Check whether money was deducted before starting another payment."
               : receipt ? "The backend is applying the received money to the contribution. Check again for the final outcome."
               : request?.recoveryStatus === "received_needs_receipt" ? "Staff must verify the receipt against business records. Do not send another payment."
+              : request?.recoveryStatus === "not_sent" ? "Retry the same saved request to send the prompt. No STK request was sent for this attempt."
               : "Complete the M-Pesa prompt on the phone, then check status. A delay does not mean the payment failed."}</AlertDescription>
           </Alert>
         </div>
@@ -227,7 +240,7 @@ export function STKContributionFlow({ onLockChange }: { onLockChange: (locked: b
       </CardContent>
       <CardFooter className="flex flex-wrap gap-3">
         <Button disabled={pending} onClick={checkStatus}>{pending ? <Spinner data-icon="inline-start" /> : null}Check status</Button>
-        {!request ? <Button disabled={pending} onClick={sendPrompt} variant="outline">Retry same saved request</Button> : null}
+        {!request || request.recoveryStatus === "not_sent" ? <Button disabled={pending} onClick={sendPrompt} variant="outline">Retry same saved request</Button> : null}
         {finished ? <Button disabled={pending} variant="outline" onClick={returnToMemberSearch}>Finish and return to member search</Button> : (
           <AlertDialog>
             <AlertDialogTrigger render={<Button disabled={pending} variant="outline" />}>Discard and start over</AlertDialogTrigger>
