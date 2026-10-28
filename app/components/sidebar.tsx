@@ -14,6 +14,7 @@ import {
   FileText,
   Search,
   ShieldUser,
+  ShieldCheck,
   HomeIcon,
   Banknote,
 } from "lucide-react";
@@ -63,6 +64,11 @@ const mainMenu = [
     title: "Dividends",
     href: "/dashboard/dividends",
     icon: Wallet,
+  },
+  {
+    title: "Staff Console",
+    href: "/dashboard/staff",
+    icon: ShieldCheck,
   },
   {
     title: "Ceep",

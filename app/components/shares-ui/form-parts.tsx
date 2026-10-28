@@ -21,11 +21,15 @@ export function ShareFeedback({state}: {state: ShareActionState}) {
     ) return;
     toast.add({
       title: state.ok
-        ? "Completed"
+        ? "Share action completed"
         : state.retry
-          ? "Outcome not confirmed"
-          : "Action failed",
-      description: state.message,
+          ? "Share action needs confirmation"
+          : "Share action not completed",
+      description: state.ok
+        ? state.message
+        : state.retry
+          ? "We couldn't confirm the outcome. Check the account before retrying."
+          : "Check the account details and try again.",
       type: state.ok ? "success" : state.retry ? "warning" : "error",
       priority: state.ok ? "low" : "high",
     });

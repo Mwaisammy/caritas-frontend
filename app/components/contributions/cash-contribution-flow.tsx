@@ -129,7 +129,11 @@ export function CashContributionFlow() {
     ) return;
     toast.add({
       title: openState.ok ? "Till opened" : "Could not open till",
-      description: openState.message,
+      description: openState.ok
+        ? openState.message
+        : openState.retry
+          ? "We couldn't confirm the till status. Check the saved session before retrying."
+          : "Check the current till status and try again.",
       type: openState.ok ? "success" : openState.retry ? "warning" : "error",
       priority: openState.ok ? "low" : "high",
     });
@@ -149,7 +153,11 @@ export function CashContributionFlow() {
     ) return;
     toast.add({
       title: closeState.ok ? "Till closed" : "Could not close till",
-      description: closeState.message,
+      description: closeState.ok
+        ? closeState.message
+        : closeState.retry
+          ? "We couldn't confirm the till status. Check it before retrying."
+          : "Check the cash count and try again.",
       type: closeState.ok ? "success" : closeState.retry ? "warning" : "error",
       priority: closeState.ok ? "low" : "high",
     });
@@ -165,7 +173,11 @@ export function CashContributionFlow() {
         : recordState.retry
           ? "Payment needs confirmation"
           : "Contribution failed",
-      description: recordState.message,
+      description: recordState.ok
+        ? recordState.message
+        : recordState.retry
+          ? "We couldn't confirm the contribution. Check its status before retrying the saved payment."
+          : "Check the contribution details and try again.",
       type: recordState.ok ? "success" : recordState.retry ? "warning" : "error",
       priority: recordState.ok ? "low" : "high",
     });
