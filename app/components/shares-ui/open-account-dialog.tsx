@@ -6,6 +6,7 @@ import type { Member } from "@/lib/go-api-client";
 import { LoaderCircle, Plus, X } from "lucide-react";
 
 import { openShareAccountAction } from "@/app/dashboard/shares/actions";
+import { Button } from "@/components/ui/button";
 import { ShareFeedback, ShareFieldError } from "./form-parts";
 import { useRouter } from "next/navigation";
 
@@ -29,6 +30,15 @@ export function OpenAccountDialog({ member }: { member?: Member }) {
       >
         Select member to open account
       </Link>
+    );
+  if (member.status !== "MEMBER_STATUS_ACTIVE")
+    return (
+      <div className="flex flex-col gap-2">
+        <Button disabled variant="outline">Open share account</Button>
+        <p className="text-sm text-muted-foreground">
+          This member must be activated before opening a share account.
+        </p>
+      </div>
     );
   return (
     <>

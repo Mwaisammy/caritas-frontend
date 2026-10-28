@@ -183,7 +183,189 @@
   }
 }
 
+/* Receipt colors stay fixed on white paper, including when the dashboard is dark. */
+.cash-receipt {
+  --receipt-ink: #222;
+  --receipt-heading: #8b2942;
+  --receipt-highlight: #f6e4b6;
+  --receipt-paper: #fff;
+  --foreground: var(--receipt-ink);
+  --muted-foreground: #555;
+  --muted: #eee;
+  --border: var(--receipt-ink);
+  color: var(--receipt-ink);
+  background: var(--receipt-paper);
+  border: 1px solid #ddd;
+  padding: 24px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.receipt-heading {
+  text-align: center;
+  margin-bottom: 12px;
+}
+.receipt-heading h1 {
+  color: var(--receipt-heading);
+  font-size: 18px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.receipt-heading p {
+  margin-top: 4px;
+}
+.cash-receipt > [data-slot="separator"] {
+  background: var(--receipt-ink);
+  height: 2px;
+}
+.receipt-member {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  padding: 10px 0;
+}
+.receipt-member > div {
+  display: flex;
+  gap: 6px;
+}
+.receipt-member > div:nth-child(3) {
+  flex: 1 1 40%;
+}
+.receipt-member > div:nth-child(4) {
+  flex: 1 1 40%;
+}
+.receipt-member dt {
+  font-weight: 700;
+  white-space: nowrap;
+}
+.receipt-member dd {
+  overflow-wrap: anywhere;
+}
+.receipt-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  padding: 12px 0;
+}
+.receipt-columns > section {
+  min-width: 0;
+}
+.cash-receipt [data-slot="table-container"] {
+  overflow: visible;
+}
+.cash-receipt table {
+  font-size: inherit;
+  table-layout: fixed;
+}
+.cash-receipt tr {
+  border: 0;
+}
+.cash-receipt tr:hover {
+  background: transparent;
+}
+.cash-receipt th,
+.cash-receipt td {
+  padding: 3px 4px;
+  height: auto;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  vertical-align: top;
+}
+.cash-receipt th {
+  font-weight: 700;
+  padding-bottom: 8px;
+}
+.cash-receipt th:last-child,
+.cash-receipt td:last-child {
+  width: 38%;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.cash-receipt small {
+  display: block;
+  font-size: 10px;
+  font-weight: 400;
+  margin-top: 2px;
+}
+.cash-receipt tr[data-highlight] {
+  background: var(--receipt-highlight);
+  color: var(--receipt-heading);
+  font-weight: 700;
+}
+.receipt-loan {
+  margin-bottom: 12px;
+}
+.receipt-loan h2 {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.receipt-note {
+  font-size: 10px;
+  margin-top: 8px;
+}
+.receipt-total {
+  border-top: 3px solid var(--receipt-ink) !important;
+}
+.receipt-words {
+  padding-top: 10px;
+}
+.receipt-footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  align-items: end;
+  gap: 24px;
+  padding-top: 16px;
+  break-inside: avoid;
+}
+.receipt-footer strong {
+  display: block;
+  margin-top: 4px;
+}
+.receipt-signature {
+  height: 70px;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  border-bottom: 1px solid var(--receipt-ink);
+}
+.receipt-stamp {
+  height: 80px;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  border: 1px dashed var(--receipt-heading);
+  color: var(--receipt-heading);
+}
+.receipt-signature span,
+.receipt-stamp span {
+  padding: 4px;
+}
+.receipt-notice {
+  font-weight: 700;
+  margin-top: 8px;
+}
+
+@media screen and (max-width: 600px) {
+  .cash-receipt {
+    padding: 16px;
+  }
+  .receipt-columns {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .receipt-heading h1 {
+    font-size: 16px;
+  }
+  .receipt-footer {
+    gap: 12px;
+  }
+}
+
 @media print {
+  html:has(.cash-receipt) {
+    page: cash-receipt;
+  }
   html:has(.ceep-print) {
     page: ceep;
   }
@@ -202,6 +384,30 @@
     inset: 0;
     width: 100%;
     box-shadow: none;
+    border: 0;
+    padding: 0;
+    font-size: 8pt;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .cash-receipt th,
+  .cash-receipt td {
+    padding: 2px 3px;
+  }
+
+  .cash-receipt .receipt-signature {
+    height: 50px;
+  }
+
+  .cash-receipt .receipt-stamp {
+    height: 60px;
+  }
+
+  .cash-receipt tr,
+  .receipt-member,
+  .receipt-words {
+    break-inside: avoid;
   }
 
   .ceep-print,
@@ -252,6 +458,11 @@
     padding: 4px;
     white-space: normal;
   }
+}
+
+@page cash-receipt {
+  size: A5 landscape;
+  margin: 8mm;
 }
 
 @page ceep {

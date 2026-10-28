@@ -48,14 +48,19 @@ function MoneyField({
   readOnly,
   value,
   onChange,
+  minimum = 0,
 }: {
   id: string;
   label: string;
   readOnly?: boolean;
   value: string;
   onChange: (value: string) => void;
+  minimum?: number;
 }) {
-  const invalid = value !== "" && !/^(0|[1-9]\d{0,9})(\.\d{1,2})?$/.test(value);
+  const invalidAmount =
+    value !== "" && !/^(0|[1-9]\d{0,9})(\.\d{1,2})?$/.test(value);
+  const belowMinimum = minorUnits(value) < minimum;
+  const invalid = invalidAmount || belowMinimum;
   return (
     <Field data-invalid={invalid}>
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
@@ -68,9 +73,19 @@ function MoneyField({
         readOnly={readOnly}
         value={value}
       />
-      {invalid ? (
+      {minimum > 0 ? (
+        <FieldDescription>
+          Minimum for this month’s unpaid installment: {formatMinorUnits(minimum)}.
+        </FieldDescription>
+      ) : null}
+      {invalidAmount ? (
         <FieldError>
           Enter a valid KES amount with up to two decimal places.
+        </FieldError>
+      ) : belowMinimum ? (
+        <FieldError>
+          Enter at least {formatMinorUnits(minimum)} for this month’s unpaid
+          installment.
         </FieldError>
       ) : null}
     </Field>
@@ -137,6 +152,17 @@ export function ContributionEntryStep({
     0,
   );
   const difference = minorUnits(amounts.cash) - total;
+  const loanMinimums = Object.fromEntries(
+    ready
+      ? obligations.loans.map((loan) => [
+          loan.loanId,
+          minorUnits(loan.installmentDue ?? "0"),
+        ])
+      : [],
+  );
+  const belowLoanMinimum = Object.entries(loanMinimums).some(
+    ([loanId, minimum]) => minorUnits(amounts.loans[loanId] ?? "") < minimum,
+  );
   return (
     <Card className="mx-auto w-full max-w-3xl">
       <CardHeader>
@@ -190,7 +216,10 @@ export function ContributionEntryStep({
               </AlertDescription>
             </Alert>
           ) : (
-            memberState.loans.map(({ loan, schedule, scheduleError }) => {
+            memberState.loans.map(({ loan, schedule }) => {
+              const position = ready
+                ? obligations.loans.find((item) => item.loanId === loan.id)
+                : undefined;
               const installment = schedule.find((item) =>
                 item.dueDate.startsWith(period),
               );
@@ -218,14 +247,14 @@ export function ContributionEntryStep({
                     </p>
                     <p>
                       <span className="text-muted-foreground">
-                        Scheduled this month:
+                        Unpaid installment this month:
                       </span>
                       <br />
-                      {schedule.length === 0 && scheduleError
-                        ? "Schedule unavailable"
-                        : installment
-                          ? formatDecimalMoney(installment.amountDue)
-                          : "No installment scheduled"}
+                      {position?.installmentDue !== undefined
+                        ? formatDecimalMoney(position.installmentDue)
+                        : loading || loadedPeriod !== period
+                          ? "Loading obligations..."
+                          : "Installment balance unavailable"}
                     </p>
                     {installment ? (
                       <p>
@@ -277,6 +306,12 @@ export function ContributionEntryStep({
             if (!ready || minorUnits(amounts.cash) <= 0 || difference !== 0) {
               setEntryError(
                 "Allocate the exact contribution total, including unpaid monthly fees.",
+              );
+              return;
+            }
+            if (belowLoanMinimum) {
+              setEntryError(
+                "Each loan payment must cover the selected month’s unpaid installment. Check the minimum shown beside each loan.",
               );
               return;
             }
@@ -433,6 +468,7 @@ export function ContributionEntryStep({
                     id={`loan-${loan.id}`}
                     key={loan.id}
                     label={`Loan ${loan.id.slice(-8)} payment (KES)`}
+                    minimum={loanMinimums[loan.id] ?? 0}
                     onChange={(amount) =>
                       setAmounts({
                         ...amounts,
@@ -456,7 +492,10 @@ export function ContributionEntryStep({
             ) : null}
             <Button
               disabled={
-                !ready || minorUnits(amounts.cash) <= 0 || difference !== 0
+                !ready ||
+                minorUnits(amounts.cash) <= 0 ||
+                difference !== 0 ||
+                belowLoanMinimum
               }
               type="submit"
             >
