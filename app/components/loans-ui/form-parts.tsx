@@ -16,8 +16,10 @@ export function LoanFeedback({state}: {state: LoanActionState}) {
       (!state.ok && Object.keys(state.fieldErrors ?? {}).length > 0)
     ) return;
     toast.add({
-      title: state.ok ? "Completed" : "Action failed",
-      description: state.message,
+      title: state.ok ? "Loan action completed" : "Loan action not completed",
+      description: state.ok
+        ? state.message
+        : "Check the loan details and try again.",
       type: state.ok ? "success" : "error",
       priority: state.ok ? "low" : "high",
     });

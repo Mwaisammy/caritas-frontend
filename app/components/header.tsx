@@ -39,6 +39,8 @@ const Header = ({ user }: HeaderProps) => {
   const title =
     section === "main"
       ? "Dashboard"
+      : section === "staff"
+        ? "Staff Console"
       : section.charAt(0).toUpperCase() + section.slice(1);
 
   return (
