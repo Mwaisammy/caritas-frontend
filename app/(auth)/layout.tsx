@@ -1,21 +1,27 @@
-import { Building2, HeartHandshake, LockKeyhole, ShieldCheck } from "lucide-react";
+import {
+  Building2,
+  HeartHandshake,
+  LockKeyhole,
+  ShieldCheck,
+} from "lucide-react";
 import AuthTabs from "@/components/authTabs";
+import caritasVillage from "@/public/village-meeting-2.jpg";
 
 const AuthLayout = ({ children }: React.PropsWithChildren) => {
   return (
     <main className="min-h-svh bg-[#f4f1ed] p-3 sm:p-5 lg:p-6">
       <div className="mx-auto grid min-h-[calc(100svh-1.5rem)] max-w-7xl overflow-hidden rounded-[1.75rem] border border-black/5 bg-white shadow-[0_24px_80px_rgba(61,24,30,0.12)] sm:min-h-[calc(100svh-2.5rem)] lg:min-h-[calc(100svh-3rem)] lg:grid-cols-[0.92fr_1.08fr]">
-        <aside className="relative isolate overflow-hidden bg-[#7d1d2d] px-6 py-6 text-white sm:px-9 sm:py-8 lg:flex lg:flex-col lg:justify-between lg:p-12">
-          <div
-            aria-hidden="true"
-            className="absolute -right-16 -top-24 -z-10 size-72 rounded-full bg-[#a9384b]/55 blur-2xl"
-          />
-          <div
-            aria-hidden="true"
-            className="absolute -bottom-36 -left-24 -z-10 size-96 rounded-full border-[70px] border-white/5"
-          />
+        <aside
+          style={{
+            backgroundImage: `url(${caritasVillage.src})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+          className="relative isolate overflow-hidden bg-[#7d1d2d] px-6 py-6 text-white sm:px-9 sm:py-8 lg:flex lg:flex-col lg:justify-between lg:p-12"
+        >
+          <div className="absolute inset-0 bg-black/40" />
 
-          <div className="flex items-center gap-3">
+          <div className=" relative z-10 flex items-center gap-3">
             <span className="grid size-11 place-items-center rounded-2xl bg-white text-[#7d1d2d] shadow-sm">
               <HeartHandshake className="size-6" aria-hidden="true" />
             </span>
@@ -25,7 +31,7 @@ const AuthLayout = ({ children }: React.PropsWithChildren) => {
             </div>
           </div>
 
-          <div className="mt-10 hidden max-w-lg lg:block">
+          <div className=" relative z-10 mt-10 hidden max-w-lg lg:block">
             <p className="mb-4 text-xs font-semibold uppercase tracking-[0.22em] text-rose-200">
               Staff workspace
             </p>
@@ -38,7 +44,7 @@ const AuthLayout = ({ children }: React.PropsWithChildren) => {
             </p>
           </div>
 
-          <div className="mt-6 hidden grid-cols-2 gap-3 lg:grid">
+          <div className=" relative z-10 mt-6 hidden grid-cols-2 gap-3 lg:grid">
             <div className="rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur-sm">
               <ShieldCheck className="mb-3 size-5 text-rose-100" />
               <p className="text-sm font-semibold">Secure access</p>
@@ -54,6 +60,7 @@ const AuthLayout = ({ children }: React.PropsWithChildren) => {
               </p>
             </div>
           </div>
+          {/* </div> */}
         </aside>
 
         <section className="flex min-w-0 flex-col bg-[#fffdfb]">
@@ -72,7 +79,7 @@ const AuthLayout = ({ children }: React.PropsWithChildren) => {
           </div>
 
           <footer className="px-5 pb-5 text-center text-xs text-stone-400 sm:px-8 sm:pb-6">
-            Caritas staff services · Secure administration
+            Caritas Admin - Sagana Branch
           </footer>
         </section>
       </div>

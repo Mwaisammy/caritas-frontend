@@ -4,11 +4,24 @@ import { Banknote, HandCoins, PiggyBank, Users } from "lucide-react";
 
 const services = [
   { title: "Members", description: "Member records and status", icon: Users },
-  { title: "Contributions", description: "Cash and M-Pesa collection", icon: Banknote },
-  { title: "Shares", description: "Accounts and transactions", icon: PiggyBank },
-  { title: "Loans", description: "Applications and repayments", icon: HandCoins },
+  {
+    title: "Contributions",
+    description: "Cash and M-Pesa collection",
+    icon: Banknote,
+  },
+  {
+    title: "Shares",
+    description: "Accounts and transactions",
+    icon: PiggyBank,
+  },
+  {
+    title: "Loans",
+    description: "Applications and repayments",
+    icon: HandCoins,
+  },
 ];
 
+import caritasVillage from "@/public/village-meeting-2.jpg";
 // Home is the public entry point for Caritas staff sign-in and registration.
 export default function Home() {
   return (
@@ -26,34 +39,49 @@ export default function Home() {
         </header>
 
         <div className="grid flex-1 lg:grid-cols-[1.05fr_0.95fr]">
-          <section className="flex flex-col justify-center bg-[#7d1d2d] px-6 py-12 text-white sm:px-10 lg:px-14">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-rose-200">
-              Authorized staff only
-            </p>
-            <h1 className="mt-4 max-w-xl text-4xl font-semibold tracking-tight sm:text-5xl">
-              Caritas Staff Portal
-            </h1>
-            <p className="mt-5 max-w-lg text-base leading-7 text-rose-100/90">
-              Securely manage member services and daily branch operations in one place.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                className="inline-flex h-11 items-center justify-center rounded-lg bg-white px-5 text-sm font-semibold text-[#7d1d2d] hover:bg-rose-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-                href="/login"
-              >
-                Sign in
-              </Link>
-              <Link
-                className="inline-flex h-11 items-center justify-center rounded-lg border border-white/35 px-5 text-sm font-semibold text-white hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-                href="/signup"
-              >
-                Create staff account
-              </Link>
+          <section
+            style={{
+              backgroundImage: `url(${caritasVillage.src})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+            className="relative flex flex-col justify-center bg-[#7d1d2d] px-6 py-12 text-white sm:px-10 lg:px-14"
+          >
+            {/* dark overlay */}
+            <div className="absolute inset-0 bg-black/40" />
+
+            <div className="relative z-10 ">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-rose-200">
+                Authorized staff only
+              </p>
+              <h1 className="mt-4 max-w-xl text-4xl font-semibold tracking-tight sm:text-5xl">
+                Caritas Staff Portal
+              </h1>
+              <p className="mt-5 max-w-lg text-base leading-7 text-rose-100/90">
+                Securely manage member services and daily branch operations in
+                one place.
+              </p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Link
+                  className="inline-flex h-11 items-center justify-center rounded-lg bg-white px-5 text-sm font-semibold text-[#7d1d2d] hover:bg-rose-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                  href="/login"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  className="inline-flex h-11 items-center justify-center rounded-lg border border-white/35 px-5 text-sm font-semibold text-white hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                  href="/signup"
+                >
+                  Create staff account
+                </Link>
+              </div>
             </div>
           </section>
 
           <section className="flex flex-col justify-center px-6 py-10 sm:px-10 lg:px-12">
-            <h2 className="text-lg font-semibold text-stone-950">Staff services</h2>
+            <h2 className="text-lg font-semibold text-stone-950">
+              Staff services
+            </h2>
             <p className="mt-2 text-sm leading-6 text-stone-600">
               Your workspace brings these day-to-day tasks together.
             </p>
@@ -64,8 +92,12 @@ export default function Home() {
                   key={title}
                 >
                   <Icon aria-hidden="true" className="size-5 text-[#9c2c40]" />
-                  <h3 className="mt-3 text-sm font-semibold text-stone-900">{title}</h3>
-                  <p className="mt-1 text-xs leading-5 text-stone-600">{description}</p>
+                  <h3 className="mt-3 text-sm font-semibold text-stone-900">
+                    {title}
+                  </h3>
+                  <p className="mt-1 text-xs leading-5 text-stone-600">
+                    {description}
+                  </p>
                 </div>
               ))}
             </div>
@@ -73,7 +105,7 @@ export default function Home() {
         </div>
 
         <footer className="border-t border-stone-200 px-5 py-4 text-center text-xs text-stone-500 sm:px-8">
-          Caritas staff services · Secure administration
+          Caritas Admin - Sagana Branch
         </footer>
       </div>
     </main>
