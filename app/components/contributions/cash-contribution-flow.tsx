@@ -30,7 +30,7 @@ import { MemberLookupStep } from "./member-lookup-step";
 import { OpenTillStep } from "./open-till-step";
 import { ReceiptStep } from "./receipt-step";
 import { ReviewContributionStep } from "./review-contribution-step";
-import { AlertTriangle, Loader } from "lucide-react";
+import { AlertTriangle, Loader, LoaderCircle } from "lucide-react";
 import { toast } from "@/components/ui/toast";
 
 // CashStep names only rendered stages; removing it allows transitions to screens this flow cannot display.
@@ -264,7 +264,7 @@ export function CashContributionFlow() {
     return (
       <p role="status" className="flex gap-4 items-center">
         {" "}
-        <Loader className="size-4 shrink-0 text-rose-700 motion-safe:animate-spin motion-reduce:animate-none" />
+        <LoaderCircle className="size-4 shrink-0 text-rose-700 motion-safe:animate-spin motion-reduce:animate-none" />
         <span className="text-muted-foreground">
           Loading cashier workspace...
         </span>

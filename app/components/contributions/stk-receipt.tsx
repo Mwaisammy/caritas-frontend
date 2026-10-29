@@ -19,7 +19,6 @@ export function STKReceipt({
   completed: boolean;
 }) {
   return (
-    <>
       <article
         className="cash-receipt"
         aria-label="M-Pesa contribution receipt"
@@ -82,13 +81,12 @@ export function STKReceipt({
             Payment received · Allocations are not yet confirmed.
           </p>
         ) : null}
+        <LoanContributionBreakdown
+          posted
+          pending={!completed}
+          loans={receipt.loans}
+          snapshotAvailable={receipt.loanSnapshotAvailable}
+        />
       </article>
-      <LoanContributionBreakdown
-        posted
-        pending={!completed}
-        loans={receipt.loans}
-        snapshotAvailable={receipt.loanSnapshotAvailable}
-      />
-    </>
   );
 }
