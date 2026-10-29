@@ -110,10 +110,7 @@ export function DarajaRecovery() {
               <Card key={payment.paymentRequestId} size="sm">
                 <CardHeader>
                   <CardTitle>{formatMoney(payment.amount)}</CardTitle>
-                  <CardDescription className="break-all">
-                    Request {payment.paymentRequestId} · Member{" "}
-                    {payment.memberId}
-                  </CardDescription>
+                  <CardDescription>M-Pesa payment for a member</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-2">
                   <Badge variant="secondary">
@@ -123,23 +120,15 @@ export function DarajaRecovery() {
                       payment.status
                     ).replaceAll("_", " ")}
                   </Badge>
-                  <p className="break-all text-sm">
-                    Checkout:{" "}
-                    {payment.checkoutRequestId ||
-                      "Unconfirmed initiation — business records required"}
-                  </p>
                   {payment.mpesaReference ? (
                     <p>M-Pesa reference: {payment.mpesaReference}</p>
-                  ) : null}
-                  {payment.providerResult ? (
-                    <p className="text-sm text-muted-foreground">
-                      {payment.providerResult}
-                    </p>
                   ) : null}
                   {payment.lastError ? (
                     <Alert variant="destructive">
                       <AlertTitle>Posting needs review</AlertTitle>
-                      <AlertDescription>{payment.lastError}</AlertDescription>
+                      <AlertDescription>
+                        Staff must review this saved payment before it can be completed.
+                      </AlertDescription>
                     </Alert>
                   ) : null}
                 </CardContent>
