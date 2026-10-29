@@ -1,4 +1,4 @@
-import {RouteLoadingStripe} from "@/app/components/route-loading-stripe";
+import { RouteLoadingStripe } from "@/app/components/route-loading-stripe";
 import { LoadingMessage } from "@/app/components/loading-message";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -13,12 +13,15 @@ export default function LoansLoading() {
             <Skeleton className="h-40 rounded-2xl bg-stone-200" />
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {[1, 2, 3, 4].map((item) => (
-                <Skeleton className="h-28 rounded-2xl bg-stone-200" key={item} />
+                <Skeleton
+                  className="h-28 rounded-2xl bg-stone-200"
+                  key={item}
+                />
               ))}
             </div>
             <Skeleton className="h-80 rounded-2xl bg-stone-200" />
           </div>
-          <LoadingMessage message="Gathering your loan information..." overlay />
+          {/* <LoadingMessage message="Gathering your loan information..." overlay /> */}
         </div>
       </div>
     </>
