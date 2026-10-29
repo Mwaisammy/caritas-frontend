@@ -378,6 +378,7 @@ export type ContributionPaymentRequest = {
 // DarajaPayment exposes unresolved requests across sessions; removing it hides recovery work.
 export type DarajaPayment = {
   paymentRequestId: string; memberId: string; checkoutRequestId?: string; amount: ShareMoney;
+  phoneNumber?: string;
   status: string; recoveryStatus: string; receiptStatus?: string; mpesaReference?: string;
   lastError?: string; providerResult?: string; createdAt: string;
 };
