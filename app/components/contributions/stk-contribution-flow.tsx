@@ -74,6 +74,7 @@ export function STKContributionFlow({
   onLockChange: (locked: boolean) => void;
 }) {
   const submission = useRef<FormData | null>(null);
+  const checking = useRef(false);
   const [context, setContext] = useState<CashContext | null>(null);
   const [startupError, setStartupError] = useState("");
   const [saved, setSaved] = useState(false);

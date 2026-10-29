@@ -98,7 +98,7 @@ export async function initiateSTKContributionAction(data: FormData): Promise<STK
       if (error instanceof GoApiError && error.status === 404) return undefined;
       throw error;
     });
-    if (existing?.paymentRequestId) return { ok: true, request: existing };
+    if (existing?.paymentRequestId && existing.recoveryStatus !== "not_sent") return { ok: true, request: existing };
     const context = await getCashContext();
     if (!context.canRecord) return { ok: false, definitive: true, message: "You do not have permission to request M-Pesa payments." };
     const member = await getMember({ branchId: context.branchId, memberId: form.data.memberId });
@@ -116,7 +116,7 @@ export async function initiateSTKContributionAction(data: FormData): Promise<STK
       allocations: allocations.data.map((item) => ({ ...item, amount: moneyFrom(item.amount) })),
     });
     if (!request.paymentRequestId) return { ok: false, message: "The request could not be confirmed. Check its status before starting another payment." };
-    return { ok: true, request };
+    return { ok: true, request: request.checkoutRequestId ? request : await getContributionPaymentRequest(form.data.idempotencyKey) };
   } catch (error) {
     console.error("M-Pesa contribution request failed", error);
     const rejected = error instanceof GoApiError && [3, 5, 7, 9, 16].includes(error.code ?? 0);
