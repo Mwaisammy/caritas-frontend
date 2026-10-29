@@ -72,8 +72,11 @@ export async function recoverDarajaAction(data: FormData) {
     });
     return {
       ok: true as const,
-      message:
-        "Recovery saved. Refresh to see processing progress. No new payment prompt was sent.",
+      message: input.action === "query"
+        ? "Status check scheduled for this checkout. Refresh shortly. No new prompt was sent."
+        : input.action === "retry_posting"
+          ? "Posting retry scheduled for the existing receipt. Refresh to see progress."
+          : "Verified payment saved. Refresh to see receipt processing. No new prompt was sent.",
     };
   } catch (error) {
     return {

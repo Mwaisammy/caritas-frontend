@@ -48,11 +48,15 @@ export function DarajaRecovery() {
     message: string;
   } | null>(null);
   const [pending, start] = useTransition();
+  const [now, setNow] = useState<number | null>(null);
 
   useEffect(() => {
     let active = true;
     loadDarajaRecoveryAction().then((value) => {
-      if (active) setResult(value);
+      if (active) {
+        setResult(value);
+        setNow(Date.now());
+      }
     });
     return () => {
       active = false;
@@ -63,6 +67,7 @@ export function DarajaRecovery() {
   const refresh = (token = "") =>
     start(async () => {
       setResult(await loadDarajaRecoveryAction(token));
+      setNow(Date.now());
     });
 
   // recover preserves the original request identity so every action remains a recovery, never a new charge.
@@ -73,6 +78,7 @@ export function DarajaRecovery() {
       if (outcome.ok) {
         setSelected(null);
         setResult(await loadDarajaRecoveryAction());
+        setNow(Date.now());
       }
     });
 
@@ -81,8 +87,8 @@ export function DarajaRecovery() {
       <CardHeader>
         <CardTitle>M-Pesa recovery</CardTitle>
         <CardDescription>
-          Find unresolved payments, check M-Pesa, or reconcile money already
-          received.
+          Unresolved checkouts stay here until payment is confirmed or verified.
+          Checking a request never sends another prompt.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
@@ -106,7 +112,33 @@ export function DarajaRecovery() {
                 No unresolved M-Pesa payments in this branch.
               </p>
             ) : null}
-            {result.payments.map((payment) => (
+            {result.payments.map((payment) => {
+              const postingNeedsReview = payment.receiptStatus === "failed" || payment.receiptStatus === "manual_review";
+              let outcome = "Waiting for confirmation";
+              let badgeVariant: "pending" | "verified" | "destructive" = "pending";
+              if (postingNeedsReview) {
+                outcome = "Payment received · posting needs review";
+                badgeVariant = "destructive";
+              } else if (payment.receiptStatus) {
+                outcome = "Payment received · posting in progress";
+                badgeVariant = "verified";
+              } else if (payment.recoveryStatus === "received_needs_receipt") {
+                outcome = "Payment confirmed · verify receipt";
+                badgeVariant = "verified";
+              } else if (payment.recoveryStatus === "received_needs_review") {
+                outcome = "Payment received · review needed";
+                badgeVariant = "verified";
+              } else if (payment.status === "failed") {
+                outcome = "Payment failed";
+                badgeVariant = "destructive";
+              } else if (payment.recoveryStatus === "not_sent") {
+                outcome = "Prompt not sent";
+              } else if (payment.recoveryStatus === "needs_review") {
+                outcome = "Outcome unknown · review needed";
+                badgeVariant = "destructive";
+              }
+              const minutes = now === null ? null : Math.max(0, Math.floor((now - new Date(payment.createdAt).getTime()) / 60000));
+              return (
               <Card key={payment.paymentRequestId} size="sm">
                 <CardHeader>
                   <CardTitle>{formatMoney(payment.amount)}</CardTitle>
@@ -149,7 +181,7 @@ export function DarajaRecovery() {
                   >
                     Check with M-Pesa
                   </Button>
-                  {result.context.canApprove ? (
+                  {result.context.canApprove && (!payment.receiptStatus || postingNeedsReview) ? (
                     <Button
                       disabled={pending}
                       onClick={() => {
@@ -157,14 +189,13 @@ export function DarajaRecovery() {
                         setSelected(payment);
                       }}
                     >
-                      {payment.receiptStatus
-                        ? "Review posting"
-                        : "Reconcile received payment"}
+                      {postingNeedsReview ? "Review posting" : "Verify received payment"}
                     </Button>
                   ) : null}
                 </CardFooter>
               </Card>
-            ))}
+              );
+            })}
           </>
         )}
       </CardContent>
@@ -215,6 +246,7 @@ export function DarajaRecovery() {
                 value={selected.receiptStatus ? "retry_posting" : "reconcile"}
               />
               <FieldGroup>
+                <p className="text-sm">Request {selected.paymentRequestId} · Expected {formatMoney(selected.amount)} · Phone {selected.phoneNumber || "not recorded"}</p>
                 {!selected.receiptStatus ? (
                   <>
                     {!selected.checkoutRequestId ? (
@@ -244,14 +276,15 @@ export function DarajaRecovery() {
                         Received amount (KES)
                       </FieldLabel>
                       <CurrencyInput
+                        key={selected.paymentRequestId}
                         id="recovery-amount"
                         name="amount"
+                        defaultValue={`${selected.amount.units || "0"}.${String(selected.amount.nanos || 0).padStart(9, "0").slice(0, 2)}`}
                         inputMode="decimal"
                         required
                       />
                       <FieldDescription>
-                        Must match this request’s expected amount. Differences
-                        require investigation.
+                        Expected {formatMoney(selected.amount)}. Confirm the amount in the business statement.
                       </FieldDescription>
                     </Field>
                     <Field>
