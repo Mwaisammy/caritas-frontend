@@ -1,6 +1,5 @@
 import "server-only";
 
-import { randomUUID } from "node:crypto";
 import { headers } from "next/headers";
 import { cache } from "react";
 
@@ -52,7 +51,10 @@ export async function goApiPost<T>(
   body: unknown,
   method = "POST",
 ): Promise<T> {
-  const requestId = randomUUID();
+  
+  // this will work in the edge runtime
+  const requestId = crypto.randomUUID(); 
+
   const authorization = await getAuthorization();
 
   if (!authorization) {
