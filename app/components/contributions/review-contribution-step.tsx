@@ -44,9 +44,9 @@ export function ReviewContributionStep({
   return (
     <Card className="mx-auto w-full max-w-2xl">
       <CardHeader>
-        <CardTitle>Review contribution</CardTitle>
-        <CardDescription>
-          Confirm the member, period, and full cash allocation before recording.
+        <CardTitle className="text-xl font-bold">Review contribution</CardTitle>
+        <CardDescription className="text-lg font-semibold">
+          Confirm whether the details are okay
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
@@ -75,27 +75,33 @@ export function ReviewContributionStep({
         <Separator />
         <div className="flex flex-col gap-2">
           {draft.allocations.map((item) => {
-            const [label, ...reason] = (item.displayLabel || allocationLabel(item.type)).split(" · ");
+            const [label, ...reason] = (
+              item.displayLabel || allocationLabel(item.type)
+            ).split(" · ");
             return (
-            <div
-              className="flex items-center justify-between gap-4"
-              key={`${item.type}-${item.targetId ?? "general"}`}
-            >
-              <span className="min-w-0">
-                {label}
-                {reason.length ? (
-                  <mark className="mt-1 block max-w-sm rounded bg-accent px-2 py-1 font-mono text-xs text-accent-foreground wrap-anywhere">
-                    {reason.join(" · ")}
-                  </mark>
-                ) : null}
-                {item.targetId && !item.displayLabel ? ` · ${item.targetId.slice(0, 8)}` : ""}
-              </span>
-              <strong className="shrink-0">{formatDecimalMoney(item.amount)}</strong>
-            </div>
+              <div
+                className="flex items-center justify-between gap-4"
+                key={`${item.type}-${item.targetId ?? "general"}`}
+              >
+                <span className="min-w-0">
+                  {label}
+                  {reason.length ? (
+                    <mark className="mt-1 block max-w-sm rounded bg-accent px-2 py-1 font-mono text-xs text-accent-foreground wrap-anywhere">
+                      {reason.join(" · ")}
+                    </mark>
+                  ) : null}
+                </span>
+                <strong className="shrink-0">
+                  {formatDecimalMoney(item.amount)}
+                </strong>
+              </div>
             );
           })}
         </div>
-        <LoanContributionBreakdown loans={draft.loans} allocations={draft.allocations} />
+        <LoanContributionBreakdown
+          loans={draft.loans}
+          allocations={draft.allocations}
+        />
         {state?.ok === false ? (
           <p className="text-sm text-destructive" role="alert">
             {state.message}

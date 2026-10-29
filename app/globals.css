@@ -35,11 +35,41 @@
   will-change: transform;
 }
 
+@keyframes skeletonShimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.loading-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.loading-shimmer::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    100deg,
+    transparent,
+    color-mix(in oklab, var(--foreground) 7%, transparent),
+    transparent
+  );
+  animation: skeletonShimmer 1.7s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .route-loading-stripe {
     width: 100%;
     animation: none;
     opacity: 0.75;
+  }
+
+  .loading-shimmer::after {
+    display: none;
   }
 }
 
