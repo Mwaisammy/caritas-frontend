@@ -216,7 +216,7 @@ export function ContributionEntryStep({
               </AlertDescription>
             </Alert>
           ) : (
-            memberState.loans.map(({ loan, schedule }) => {
+            memberState.loans.map(({ loan, schedule }, index) => {
               const position = ready
                 ? obligations.loans.find((item) => item.loanId === loan.id)
                 : undefined;
@@ -226,7 +226,7 @@ export function ContributionEntryStep({
               return (
                 <Card key={loan.id} size="sm">
                   <CardHeader>
-                    <CardTitle>Loan {loan.id.slice(-8)}</CardTitle>
+                    <CardTitle>Loan {index + 1}</CardTitle>
                     <CardDescription>
                       <Badge variant="outline">
                         {loan.status
@@ -463,11 +463,11 @@ export function ContributionEntryStep({
                       </Field>
                     );
                   })}
-                {memberState.loans.map(({ loan }) => (
+                {memberState.loans.map(({ loan }, index) => (
                   <MoneyField
                     id={`loan-${loan.id}`}
                     key={loan.id}
-                    label={`Loan ${loan.id.slice(-8)} payment (KES)`}
+                    label={`Loan ${index + 1} payment (KES)`}
                     minimum={loanMinimums[loan.id] ?? 0}
                     onChange={(amount) =>
                       setAmounts({

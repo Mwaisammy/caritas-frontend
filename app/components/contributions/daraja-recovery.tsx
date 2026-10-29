@@ -142,39 +142,25 @@ export function DarajaRecovery() {
               <Card key={payment.paymentRequestId} size="sm">
                 <CardHeader>
                   <CardTitle>{formatMoney(payment.amount)}</CardTitle>
-                  <CardDescription>
-                    Member {payment.memberId}
-                  </CardDescription>
+                  <CardDescription>M-Pesa payment for a member</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-2">
-                  <Badge variant={badgeVariant}>{outcome}</Badge>
-                  {payment.recoveryStatus === "received_needs_receipt" || payment.recoveryStatus === "received_needs_review" ? (
-                    <p className="text-sm">Check the SACCO M-Pesa business statement before recording the receipt.</p>
-                  ) : payment.status === "failed" || payment.recoveryStatus === "needs_review" ? (
-                    <p className="text-sm">Confirm whether money was deducted before starting another payment.</p>
-                  ) : null}
-                  <p className="text-sm">Phone: {payment.phoneNumber || "Not recorded"}</p>
-                  <p className="text-sm">Requested {new Date(payment.createdAt).toLocaleString("en-KE", { timeZone: "Africa/Nairobi" })}
-                    {minutes === null ? "" : ` · ${minutes >= 1440 ? `${Math.floor(minutes / 1440)} d` : minutes >= 60 ? `${Math.floor(minutes / 60)} h` : `${minutes} min`} ago`}
-                  </p>
-                  <p className="break-all text-sm text-muted-foreground">Request: {payment.paymentRequestId}</p>
-                  <p className="break-all text-sm">
-                    Checkout:{" "}
-                    {payment.checkoutRequestId ||
-                      "Unconfirmed initiation — business records required"}
-                  </p>
+                  <Badge variant="secondary">
+                    {(
+                      payment.receiptStatus ||
+                      payment.recoveryStatus ||
+                      payment.status
+                    ).replaceAll("_", " ")}
+                  </Badge>
                   {payment.mpesaReference ? (
                     <p>M-Pesa reference: {payment.mpesaReference}</p>
-                  ) : null}
-                  {payment.providerResult ? (
-                    <p className="text-sm text-muted-foreground">
-                      Latest status check: {payment.providerResult}
-                    </p>
                   ) : null}
                   {payment.lastError ? (
                     <Alert variant="destructive">
                       <AlertTitle>Posting needs review</AlertTitle>
-                      <AlertDescription>{payment.lastError}</AlertDescription>
+                      <AlertDescription>
+                        Staff must review this saved payment before it can be completed.
+                      </AlertDescription>
                     </Alert>
                   ) : null}
                 </CardContent>

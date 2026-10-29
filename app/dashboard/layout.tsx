@@ -8,6 +8,7 @@ import AppSidebar from "../components/sidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import {Skeleton} from "@/components/ui/skeleton";
 import {RouteLoadingStripe} from "../components/route-loading-stripe";
+import { LoadingMessage } from "../components/loading-message";
 
 // DashboardShellFallback provides a stable first frame while authentication resolves.
 function DashboardShellFallback() {
@@ -19,10 +20,13 @@ function DashboardShellFallback() {
         <Skeleton className="mt-10 h-72 rounded-xl" />
       </aside>
       <main className="min-w-0 flex-1 p-6">
-        <div className="mx-auto max-w-7xl space-y-6">
-          <Skeleton className="h-16 rounded-xl" />
-          <Skeleton className="h-40 rounded-2xl bg-rose-100" />
-          <Skeleton className="h-80 rounded-2xl" />
+        <div className="relative mx-auto max-w-7xl">
+          <div className="space-y-6">
+            <Skeleton className="h-16 rounded-xl" />
+            <Skeleton className="h-40 rounded-2xl bg-rose-100" />
+            <Skeleton className="h-80 rounded-2xl" />
+          </div>
+          <LoadingMessage message="Opening your workspace..." overlay />
         </div>
       </main>
     </div>

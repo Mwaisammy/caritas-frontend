@@ -1,6 +1,12 @@
 "use client";
+
 import { useEffect, useState, useTransition } from "react";
-import { BanknoteIcon, PrinterIcon, UserRoundPlusIcon } from "lucide-react";
+import {
+  BanknoteIcon,
+  Loader,
+  PrinterIcon,
+  UserRoundPlusIcon,
+} from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,8 +27,7 @@ import {
   type CashMutationState,
 } from "@/app/dashboard/contributions/actions";
 import { allocationLabel, formatMoney } from "./contribution-utils";
-// Spelling integer amounts supplies the paper receipt's amount-in-words line;
-// removing this would leave only numeric amounts. BigInt avoids money rounding.
+
 function amountWords(value: bigint): string {
   const small = [
     "Zero",
@@ -46,7 +51,9 @@ function amountWords(value: bigint): string {
     "Eighteen",
     "Nineteen",
   ];
+
   if (value < BigInt(20)) return small[Number(value)];
+
   if (value < BigInt(100)) {
     return (
       [
@@ -64,6 +71,7 @@ function amountWords(value: bigint): string {
       (value % BigInt(10) ? ` ${amountWords(value % BigInt(10))}` : "")
     );
   }
+
   for (const [scale, label] of [
     [BigInt("1000000000000"), "Trillion"],
     [BigInt(1_000_000_000), "Billion"],
@@ -71,12 +79,16 @@ function amountWords(value: bigint): string {
     [BigInt(1_000), "Thousand"],
     [BigInt(100), "Hundred"],
   ] as const) {
-    if (value >= scale)
-      return `${amountWords(value / scale)} ${label}${value % scale ? ` ${amountWords(value % scale)}` : ""}`;
+    if (value >= scale) {
+      return `${amountWords(value / scale)} ${label}${
+        value % scale ? ` ${amountWords(value % scale)}` : ""
+      }`;
+    }
   }
+
   return "";
 }
-// ReceiptStep prints the confirmed receipt and only claims balances returned authoritatively.
+
 export function ReceiptStep({
   memberState,
   onAnotherMember,
@@ -96,91 +108,123 @@ export function ReceiptStep({
   const [statusError, setStatusError] = useState("");
   const [loadingDetails, startDetails] = useTransition();
   const [checking, startChecking] = useTransition();
+
   const receipt =
     refreshed?.id === state.receipt?.id ? refreshed : state.receipt;
+
   useEffect(() => {
     if (!receipt) return;
+
     let active = true;
+
     startDetails(async () => {
       const result = await loadCashReceiptDetailsAction(receipt.id).catch(
         () => undefined,
       );
-      if (active && result?.ok) setDetails({ message: "", receipt, ...result });
+
+      if (active && result?.ok) {
+        setDetails({ message: "", receipt, ...result });
+      }
     });
+
     return () => {
       active = false;
     };
   }, [receipt]);
+
   if (!receipt) return null;
+
   const completed = receipt.status === "completed";
   const pending =
     receipt.status === "pending" || receipt.status === "processing";
+
   const allocations = receipt.allocations ?? [];
+
   const allocationsCompleted =
-    completed && allocations.length > 0 &&
+    completed &&
+    allocations.length > 0 &&
     allocations.every((item) => item.status === "completed");
+
   const detailsReady = details?.receipt === receipt;
+
   const needsShareBalance = allocations.some(
     (item) => item.type === "CONTRIBUTION_ALLOCATION_TYPE_SHARE_PURCHASE",
   );
-  const shareBalance = detailsReady && completed ? details?.shareBalance : undefined;
+
+  const shareBalance =
+    detailsReady && completed ? details?.shareBalance : undefined;
+
   const printDisabledReason = !allocationsCompleted
-    ? pending ? "Allocations are still processing." : "Allocations require review."
+    ? pending
+      ? "Payment is still processing, please wait..."
+      : "Please check the payment status."
     : loadingDetails || checking
-      ? "Loading receipt details..."
+      ? "Loading receipt..."
       : !detailsReady
-        ? "Receipt details unavailable. Retry before printing."
+        ? "Receipt details unavailable. Try again."
         : needsShareBalance && !shareBalance
-          ? "Share balance unavailable. Retry before printing."
+          ? "Share balance unavailable. Try again."
           : "";
+
   const member =
     (details?.receipt?.id === receipt.id ? details.member : undefined) ??
     (memberState?.member.id === receipt.memberId
       ? memberState.member
       : undefined);
+
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2 print:hidden">
         <p className="font-medium">Cash contribution receipt</p>
+
         <Badge variant={completed ? "secondary" : "outline"}>
           {receipt.status.replaceAll("_", " ")}
         </Badge>
       </div>
-      {!completed ? (
+
+      {!completed && (
         <Alert className="print:hidden">
           <AlertTitle>
-            {pending ? "Allocations pending" : "Allocation requires review"}
+            {pending ? "Payment processing" : "Payment needs review"}
           </AlertTitle>
+
           <AlertDescription>
-            Cash was received, but share and loan balances are not confirmed as
-            updated.
             {pending
-              ? " Processing will retry automatically. Check the status to see the result."
-              : " Ask a manager to review this receipt."}
+              ? "Your cash was received. We're updating the balances."
+              : "Your cash was received, but the balances need checking. Please contact a manager."}
           </AlertDescription>
         </Alert>
-      ) : null}
-      {printDisabledReason ? (
+      )}
+
+      {printDisabledReason && (
         <div className="flex flex-col gap-2 print:hidden">
-          <p role="status">{printDisabledReason}</p>
+          <p role="status" className="flex gap-4 items-center">
+            <Loader className="size-4 shrink-0 text-rose-700 motion-safe:animate-spin motion-reduce:animate-none" />
+
+            <span className="text-muted-foreground">{printDisabledReason}</span>
+          </p>
+
           <Button
             variant="outline"
             disabled={checking || loadingDetails}
             onClick={() =>
               startChecking(async () => {
                 setStatusError("");
+
                 try {
                   const result = await recoverCashReceiptAction({
                     receiptId: receipt.id,
                   });
-                  if (result?.ok && result.receipt)
+
+                  if (result?.ok && result.receipt) {
                     setRefreshed(result.receipt);
-                  else
+                  } else {
                     setStatusError(
-                      result?.message ?? "Unable to check receipt status.",
+                      result?.message ?? "Couldn't check payment status.",
                     );
+                  }
                 } catch {
-                  setStatusError("Unable to check receipt status. Try again.");
+                  setStatusError("Couldn't check payment status. Try again.");
                 }
               })
             }
@@ -189,30 +233,37 @@ export function ReceiptStep({
               ? "Checking..."
               : allocationsCompleted
                 ? "Retry receipt details"
-                : "Check allocation status"}
+                : "Check payment status"}
           </Button>
-          {statusError ? <p role="alert">{statusError}</p> : null}
+
+          {statusError && <p role="alert">{statusError}</p>}
         </div>
-      ) : null}
+      )}
+
       <article className="cash-receipt" aria-label="Cash contribution receipt">
         <header className="receipt-heading">
           <h1>Our Lady of Consolata Sagana Kabiruini Parish</h1>
           <p>Caritas SACCO · Cash contribution receipt</p>
         </header>
+
         <Separator />
+
         <dl className="receipt-member">
           <div>
             <dt>Receipt No.</dt>
             <dd>{receipt.internalReceiptReference}</dd>
           </div>
+
           <div>
             <dt>Member No.</dt>
             <dd>{member?.memberNumber ?? "Not available"}</dd>
           </div>
+
           <div>
             <dt>Name</dt>
             <dd>{member?.profile?.personal?.fullName ?? "Unnamed member"}</dd>
           </div>
+
           <div>
             <dt>For month</dt>
             <dd>
@@ -225,6 +276,7 @@ export function ReceiptStep({
               })}
             </dd>
           </div>
+
           <div>
             <dt>Received on</dt>
             <dd>
@@ -238,13 +290,16 @@ export function ReceiptStep({
             </dd>
           </div>
         </dl>
+
         <Separator />
-        {!completed ? (
+
+        {!completed && (
           <p className="receipt-notice">
-            Cash received · {receipt.status.replaceAll("_", " ")} · Allocations
-            and updated balances are not confirmed.
+            Cash received · {receipt.status.replaceAll("_", " ")} · Balances are
+            not yet confirmed.
           </p>
-        ) : null}
+        )}
+
         <div className="receipt-columns">
           <section
             aria-label={
@@ -260,31 +315,38 @@ export function ReceiptStep({
                   <TableHead scope="col">Amt. paid</TableHead>
                 </TableRow>
               </TableHeader>
+
               <TableBody>
-                {(receipt.allocations ?? []).map((item) => {
+                {allocations.map((item) => {
                   const [label, ...reason] = (
                     item.displayLabel || allocationLabel(item.type)
                   ).split(" · ");
+
                   return (
                     <TableRow key={item.type + (item.targetId ?? "general")}>
                       <TableCell>
                         {label}
-                        {reason.length ? (
+
+                        {reason.length > 0 && (
                           <small>{reason.join(" · ")}</small>
-                        ) : null}
-                        {!completed ? (
+                        )}
+
+                        {!completed && (
                           <small>{item.status.replaceAll("_", " ")}</small>
-                        ) : null}
+                        )}
                       </TableCell>
+
                       <TableCell>{formatMoney(item.amount)}</TableCell>
                     </TableRow>
                   );
                 })}
+
                 <TableRow data-highlight="true">
                   <TableCell>
                     Current share balance
-                    <small>At lookup · not a receipt-time balance</small>
+                    <small>Balance at the time of lookup</small>
                   </TableCell>
+
                   <TableCell>
                     {!needsShareBalance ? (
                       "Not applicable"
@@ -306,34 +368,35 @@ export function ReceiptStep({
                 </TableRow>
               </TableBody>
             </Table>
+
             <p className="receipt-note">
-              Loan repayments include the principal, interest, penalties and
-              credit detailed alongside.
+              Loan payments include principal, interest, penalties and any
+              credit shown alongside.
             </p>
           </section>
+
           <section aria-label="Saved loan payment breakdown">
             {!completed ? (
               <p className="receipt-note">
-                Loan breakdown pending allocation completion.
+                Loan details will appear when processing is complete.
               </p>
             ) : !receipt.loanSnapshotAvailable ? (
               <p className="receipt-note">
-                Loan figures were not saved with this receipt. Refer to the loan
-                ledger for its payment history.
+                Loan details are not available on this receipt. Check the loan
+                ledger for payment history.
               </p>
             ) : !receipt.loans?.length ? (
               <p className="receipt-note">
-                No payable loans when this receipt was posted.
+                No loan payments were due when this receipt was issued.
               </p>
             ) : (
               receipt.loans.map((loan) => (
                 <div className="receipt-loan" key={loan.loanId}>
-                  <h2>
-                    Loan {loan.loanId.slice(-8)} · {loan.period.slice(0, 7)}
-                  </h2>
+                  <h2>Loan payment · {loan.period.slice(0, 7)}</h2>
+
                   {!loan.payable ? (
                     <p className="receipt-note">
-                      No payment can be posted for this loan in this period.
+                      No payment was due for this loan in this period.
                     </p>
                   ) : (
                     <>
@@ -344,6 +407,7 @@ export function ReceiptStep({
                             <TableHead scope="col">Amount (KES)</TableHead>
                           </TableRow>
                         </TableHeader>
+
                         <TableBody>
                           {[
                             [
@@ -373,32 +437,38 @@ export function ReceiptStep({
                             ],
                           ].map(([label, value]) => {
                             const [whole, fraction = ""] = value.split(".");
+
                             return (
                               <TableRow
                                 key={label}
                                 data-highlight={
-                                  label === "Principal after payment" || undefined
+                                  label === "Principal after payment" ||
+                                  undefined
                                 }
                               >
                                 <TableCell>{label}</TableCell>
+
                                 <TableCell>
-                                  {whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
-                                  .{fraction.padEnd(2, "0")}
+                                  {whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}.
+                                  {fraction.padEnd(2, "0")}
                                 </TableCell>
                               </TableRow>
                             );
                           })}
                         </TableBody>
                       </Table>
+
                       <p className="receipt-note">
-                        Monthly rate: {Number(loan.interestRate) * 100}%. Saved
-                        at posting; later payments do not change these figures.
+                        Monthly rate: {Number(loan.interestRate) * 100}%.
+                        Figures are saved as they were when this payment was
+                        recorded.
                       </p>
                     </>
                   )}
                 </div>
               ))
             )}
+
             <Table aria-label="Total cash received">
               <TableBody>
                 <TableRow data-highlight="true" className="receipt-total">
@@ -409,7 +479,9 @@ export function ReceiptStep({
             </Table>
           </section>
         </div>
+
         <Separator />
+
         <p className="receipt-words">
           <strong>Amount in words: </strong>
           {receipt.amount
@@ -421,23 +493,22 @@ export function ReceiptStep({
               " cents"
             : "Not available"}
         </p>
+
         <footer className="receipt-footer">
           <p>
             Payment method<strong>Cash</strong>
           </p>
+
           <div className="receipt-signature">
             <span>Sign</span>
           </div>
+
           <div className="receipt-stamp">
             <span>Stamp</span>
           </div>
         </footer>
       </article>
-      <p className="break-all text-xs text-muted-foreground print:hidden">
-        Receipt ID for retrieval: {receipt.id}
-        <br />
-        Session reference: {receipt.sessionId}
-      </p>
+
       <div className="flex flex-wrap gap-2 print:hidden">
         <Button
           disabled={Boolean(printDisabledReason)}
@@ -448,10 +519,12 @@ export function ReceiptStep({
           <PrinterIcon data-icon="inline-start" />
           Print receipt
         </Button>
+
         <Button onClick={onAnotherMember} variant="outline">
           <UserRoundPlusIcon data-icon="inline-start" />
           Another member
         </Button>
+
         <Button onClick={onCloseTill} variant="ghost">
           <BanknoteIcon data-icon="inline-start" />
           Close till
