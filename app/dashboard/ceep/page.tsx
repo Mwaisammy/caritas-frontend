@@ -1,9 +1,10 @@
 import {connection} from "next/server";
 import {CeepReport} from "@/app/components/ceep/ceep-report";
 import {Suspense} from "react";
+import DashboardLoading from "../loading";
 
 // Request-time Nairobi dates prevent a cached page from offering yesterday's reporting month.
-export default async function CeepPage() {
+async function CeepContent() {
   await connection();
   const month = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Africa/Nairobi",
@@ -15,13 +16,18 @@ export default async function CeepPage() {
   const previous = new Date(Date.UTC(Number(year), Number(number) - 2, 1));
 
   return (
-    // TODO-implement loading page ie loading.tsx
-    <Suspense fallback="loading...">
-      <CeepReport
-        initialMonth={previous.toISOString().slice(0, 7)}
-        currentMonth={`${year}-${number}`}
-      />
-      ;
+    <CeepReport
+      initialMonth={previous.toISOString().slice(0, 7)}
+      currentMonth={`${year}-${number}`}
+    />
+  );
+}
+
+// CeepPage gives client navigation a fallback before request-time dates are read.
+export default function CeepPage() {
+  return (
+    <Suspense fallback={<DashboardLoading />}>
+      <CeepContent />
     </Suspense>
   );
 }

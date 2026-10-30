@@ -2,9 +2,9 @@
 
 // import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import {usePathname} from "next/navigation";
 
-import { BarChart3, FileText, Search } from "lucide-react";
+import {BarChart3, FileText, Search} from "lucide-react";
 
 import {
   Sidebar,
@@ -17,8 +17,8 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarSeparator,
 } from "@/components/ui/sidebar";
+import Image from "next/image";
 
 const reports = [
   {
@@ -40,14 +40,13 @@ export default function UserSidebar() {
     <Sidebar className="border-r bg-white">
       {/* Header */}
       <SidebarHeader className="border-b px-5 py-6">
-        {/* <Image
-          src="/caritas-logo.png"
+        <Image
+          src="https://res.cloudinary.com/dbl2bdg1v/image/upload/v1793372215/caritas-logo_ref7qu.png"
           alt="Caritas"
           width={180}
           height={60}
           priority
-        /> */}
-        LOGO
+        />
         <div className="relative mt-5">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
 

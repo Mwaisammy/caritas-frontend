@@ -1,9 +1,9 @@
+import {Banknote, HandCoins, PiggyBank, Users} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { Banknote, HandCoins, PiggyBank, Users } from "lucide-react";
 
 const services = [
-  { title: "Members", description: "Member records and status", icon: Users },
+  {title: "Members", description: "Member records and status", icon: Users},
   {
     title: "Contributions",
     description: "Cash and M-Pesa collection",
@@ -21,7 +21,6 @@ const services = [
   },
 ];
 
-import caritasVillage from "@/public/village-meeting-2.jpg";
 // Home is the public entry point for Caritas staff sign-in and registration.
 export default function Home() {
   return (
@@ -29,7 +28,7 @@ export default function Home() {
       <div className="mx-auto flex min-h-[calc(100svh-1.5rem)] max-w-6xl flex-col overflow-hidden rounded-[1.75rem] border border-black/5 bg-white shadow-[0_24px_80px_rgba(61,24,30,0.12)] sm:min-h-[calc(100svh-2.5rem)] lg:min-h-[calc(100svh-3rem)]">
         <header className="border-b border-stone-200 px-5 py-4 sm:px-8">
           <Image
-            src="/caritas-logo.png"
+            src="https://res.cloudinary.com/dbl2bdg1v/image/upload/v1793372215/caritas-logo_ref7qu.png"
             alt="Caritas Sagana"
             width={180}
             height={108}
@@ -39,14 +38,15 @@ export default function Home() {
         </header>
 
         <div className="grid flex-1 lg:grid-cols-[1.05fr_0.95fr]">
-          <section
-            style={{
-              backgroundImage: `url(${caritasVillage.src})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-            }}
-            className="relative flex flex-col justify-center bg-[#7d1d2d] px-6 py-12 text-white sm:px-10 lg:px-14"
-          >
+          <section className="relative flex flex-col justify-center bg-[#7d1d2d] px-6 py-12 text-white sm:px-10 lg:px-14">
+            <Image
+              src="https://res.cloudinary.com/dbl2bdg1v/image/upload/v1793372220/village-meeting-2_jbhfsg.jpg"
+              alt=""
+              fill
+              sizes="(min-width: 1024px) 50vw, 100vw"
+              className="object-cover"
+              fetchPriority="high"
+            />
             {/* dark overlay */}
             <div className="absolute inset-0 bg-black/40" />
 
@@ -86,7 +86,7 @@ export default function Home() {
               Your workspace brings these day-to-day tasks together.
             </p>
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              {services.map(({ title, description, icon: Icon }) => (
+              {services.map(({title, description, icon: Icon}) => (
                 <div
                   className="rounded-xl border border-stone-200 bg-[#fffdfb] p-4"
                   key={title}

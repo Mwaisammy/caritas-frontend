@@ -17,6 +17,8 @@ const unavailable = "Unavailable";
 // Props carry server-fetched values into the existing chart UI.
 type DashboardData = {
   outstandingLoans: string | null;
+  shareCapital: string | null;
+  collectionsThisMonth: string | null;
   activeMembers: number | null;
   loanMix: { name: string; value: number; color: string }[] | null;
   pendingApplications: number | null;
@@ -56,8 +58,10 @@ export default function MainPage({ data }: { data: DashboardData }) {
     },
     {
       label: "Share capital",
-      value: unavailable,
-      context: "No branch total available",
+      value: data.shareCapital ?? unavailable,
+      context: data.shareCapital === null
+        ? "Share data unavailable"
+        : "Current branch share balance",
       icon: PiggyBank,
       tone: "text-amber-700 bg-amber-50",
       href: "/dashboard/shares",
@@ -102,8 +106,8 @@ export default function MainPage({ data }: { data: DashboardData }) {
               <ArrowUpRight className="size-5" />
             </span>
             <div>
-              <p className="text-xs text-rose-100">Collections this month</p>
-              <p className="text-xl font-semibold">{unavailable}</p>
+              <p className="text-xs text-rose-100">Completed collections received this month</p>
+              <p className="text-xl font-semibold">{data.collectionsThisMonth ?? unavailable}</p>
             </div>
           </div>
         </div>
