@@ -2,21 +2,19 @@
 
 // import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import {usePathname} from "next/navigation";
 
 import {
-  // LayoutDashboard,
-  HandCoins,
-  PiggyBank,
-  Wallet,
-  Users,
+  Banknote,
   BarChart3,
   FileText,
-  Search,
-  ShieldUser,
-  ShieldCheck,
+  HandCoins,
   HomeIcon,
-  Banknote,
+  PiggyBank,
+  ShieldCheck,
+  ShieldUser,
+  Users,
+  Wallet,
 } from "lucide-react";
 
 import {
@@ -33,7 +31,6 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar";
 import Image from "next/image";
-import caritasLogo from "@/public/caritas-logo.png"
 const mainMenu = [
   {
     title: "Dashboard",
@@ -105,22 +102,24 @@ const initialsFor = (name: string) =>
     .map((part) => part[0]?.toUpperCase())
     .join("") || "CA";
 
-export default function AppSidebar({ user }: AppSidebarProps) {
+export default function AppSidebar({user}: AppSidebarProps) {
   const pathname = usePathname();
 
   return (
     <Sidebar className="border-r bg-white">
       {/* Header */}
-   <SidebarHeader className="flex mr-auto border-b px-3">
-  <Image
-    src={caritasLogo}
-    alt="Caritas Sagana"
-    width={500}
-    height={300}
-    className="w-[240px] h-auto object-contain -ml-3"
-    priority
-  />
-</SidebarHeader>
+      <SidebarHeader className="flex mr-auto border-b px-3">
+        <Image
+          src={
+            "https://res.cloudinary.com/dbl2bdg1v/image/upload/v1793372215/caritas-logo_ref7qu.png"
+          }
+          alt="Caritas Sagana"
+          width={500}
+          height={300}
+          className="w-[240px] h-auto object-contain -ml-3"
+          priority
+        />
+      </SidebarHeader>
 
       {/* Content */}
       <SidebarContent>
@@ -139,7 +138,7 @@ export default function AppSidebar({ user }: AppSidebarProps) {
                     <SidebarMenuButton
                       render={<Link href={item.href} />}
                       isActive={active}
-                      style={{ margin: "0.1rem 0rem" }}
+                      style={{margin: "0.1rem 0rem"}}
                       className={
                         active
                           ? "bg-red-800 text-white hover:bg-red-800"
