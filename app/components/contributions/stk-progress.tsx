@@ -18,7 +18,7 @@ export function STKProgress({
     orientation === "vertical"
       ? [
           ["Prompt sent", "Sent to the phone above."],
-          ["Confirming M-Pesa", "Enter your PIN on that phone."],
+          ["Confirming M-Pesa", "Waiting for payment confirmation."],
           ["Applying payment", "We’re updating contributions and loans."],
           ["Receipt ready", "Your receipt is ready to print."],
         ]

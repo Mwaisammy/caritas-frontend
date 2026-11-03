@@ -109,6 +109,7 @@ export function STKContributionFlow({
   useEffect(() => {
     if (!saved || terminal) return;
     let active = true;
+    let pollCount = 0;
     const timer = setInterval(async () => {
       if (
         !submission.current ||
@@ -119,8 +120,11 @@ export function STKContributionFlow({
       setCheckingStatus(true);
       const savedSubmission = submission.current;
       try {
+        // Query Daraja every fifth status read to keep updates quick without over-querying it.
+        const queryProvider = ++pollCount % 5 === 0;
         const result = await checkSTKContributionAction(
           String(savedSubmission.get("idempotencyKey")),
+          queryProvider,
         );
         if (active && submission.current === savedSubmission && result?.ok) {
           setRequest(result.request);
@@ -171,7 +175,7 @@ export function STKContributionFlow({
         pollInFlight.current = false;
         if (active) setCheckingStatus(false);
       }
-    }, 5000);
+    }, 3000);
     return () => {
       active = false;
       clearInterval(timer);
@@ -353,6 +357,9 @@ export function STKContributionFlow({
 
   const receipt = request?.receipt;
   const completed = receipt?.status === "completed";
+  const paymentReceived =
+    request?.status === "CONTRIBUTION_PAYMENT_REQUEST_STATUS_COMPLETED" ||
+    Boolean(receipt);
   const failed =
     request?.recoveryStatus === "provider_failed" ||
     (request?.status === "CONTRIBUTION_PAYMENT_REQUEST_STATUS_FAILED" &&
@@ -369,7 +376,7 @@ export function STKContributionFlow({
       ? "review"
       : failed
         ? "failed"
-        : receipt
+        : paymentReceived
           ? "processing"
           : pending && !request
             ? "sending"
@@ -388,7 +395,7 @@ export function STKContributionFlow({
         : "Payment needs checking"
       : failed
         ? "Payment not completed"
-        : receipt
+        : paymentReceived
           ? "Payment received"
           : state?.ok === false
             ? "We can’t confirm the payment yet"
@@ -405,8 +412,8 @@ export function STKContributionFlow({
         : "Please ask staff to check this payment before trying again."
       : failed
         ? "Please check whether money was deducted before trying again."
-        : receipt
-          ? "We’ve received your payment and are applying it to your contribution and loans."
+        : paymentReceived
+          ? "Payment confirmed. We’re applying it to your contribution and loans."
           : paymentStatus === "sending"
             ? "We’re sending the prompt to the phone shown above."
             : paymentStatus === "awaiting"
@@ -416,7 +423,7 @@ export function STKContributionFlow({
                 : "We haven’t received confirmation yet. Your request is saved, so please don’t pay again.";
   const paymentProgressStep: 1 | 2 | 3 | 4 = completed
     ? 4
-    : receipt || paymentReceivedNeedsReview
+    : paymentReceived || paymentReceivedNeedsReview
       ? 3
       : pending && !request
         ? 1

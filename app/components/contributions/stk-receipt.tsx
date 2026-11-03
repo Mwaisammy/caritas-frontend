@@ -1,10 +1,9 @@
-import {Separator} from "@/components/ui/separator";
-import type {ContributionPaymentRequest} from "@/lib/go-api-client";
-import {formatMoney} from "./contribution-utils";
-import {LoanContributionBreakdown} from "./loan-contribution-breakdown";
-import type {CashMemberState} from "@/app/dashboard/contributions/actions";
+import type { ContributionPaymentRequest } from "@/lib/go-api-client";
+import type { CashMemberState } from "@/app/dashboard/contributions/actions";
+import { formatMoney, formatReceiptLoanAmount } from "./contribution-utils";
+import { ContributionPrintReceipt } from "./contribution-print-receipt";
 
-// STKReceipt presents only M-Pesa receipt facts returned by the backend.
+// STKReceipt puts authoritative M-Pesa receipt details in the shared print layout.
 export function STKReceipt({
   receipt,
   member,
@@ -13,80 +12,76 @@ export function STKReceipt({
   completed,
 }: {
   receipt: NonNullable<ContributionPaymentRequest["receipt"]>;
-  member: Extract<CashMemberState, {ok: true}> | null;
+  member: Extract<CashMemberState, { ok: true }> | null;
   period: string;
   phone: string;
   completed: boolean;
 }) {
+  const loanRows = receipt.loanSnapshotAvailable && receipt.loans?.length
+    ? (receipt.loans ?? []).flatMap((loan, index) =>
+        ([
+          ["Opening principal", loan.openingPrincipal],
+          ["Interest this month", loan.periodInterest],
+          ["Earlier interest owed", loan.earlierInterestDue],
+          ["Interest owed", loan.interestDue],
+          ["Penalties owed", loan.penaltyDue],
+          ["Loan payment", loan.payment],
+          ["Principal paid", loan.principalPaid],
+          ["Interest paid", loan.interestPaid],
+          ["Penalties paid", loan.penaltyPaid],
+          ["Overpayment credit", loan.credit],
+          ["Interest remaining", loan.interestRemaining],
+          ["Principal after payment", loan.principalRemaining],
+        ] as const).map(([label, value]) => ({
+          key: `${loan.loanId}-${label}`,
+          label: `Loan ${index + 1} ${label.toLowerCase()}`,
+          value: formatReceiptLoanAmount(value),
+        })),
+      )
+    : receipt.loanSnapshotAvailable
+      ? [{ label: "No loan payments were due", value: "—" }]
+      : [{ label: "Loan breakdown unavailable", value: "See loan ledger" }];
+  const periodLabel = period
+    ? new Date(`${period}-01T00:00:00+03:00`).toLocaleDateString("en-KE", {
+        month: "long",
+        year: "numeric",
+        timeZone: "Africa/Nairobi",
+      })
+    : "Not available";
+
   return (
-      <article
-        className="cash-receipt"
-        aria-label="M-Pesa contribution receipt"
-      >
-        <header className="receipt-heading">
-          <h1>Our Lady of Consolata Sagana Kabiruini Parish</h1>
-          <p>Caritas SACCO · M-Pesa contribution receipt</p>
-        </header>
-        <Separator />
-        <dl className="receipt-member">
-          <div>
-            <dt>Receipt No.</dt>
-            <dd>{receipt.mpesaReference || "Not available"}</dd>
-          </div>
-          <div>
-            <dt>Member No.</dt>
-            <dd>{member?.member.memberNumber ?? "Not available"}</dd>
-          </div>
-          <div>
-            <dt>Name</dt>
-            <dd>
-              {member?.member.profile?.personal?.fullName ?? "Not available"}
-            </dd>
-          </div>
-          <div>
-            <dt>For month</dt>
-            <dd>{period || "Not available"}</dd>
-          </div>
-          <div>
-            <dt>Amount</dt>
-            <dd>{formatMoney(receipt.amount)}</dd>
-          </div>
-          <div>
-            <dt>Payment method</dt>
-            <dd>M-Pesa</dd>
-          </div>
-          <div>
-            <dt>Phone</dt>
-            <dd>{phone || "Not available"}</dd>
-          </div>
-          <div>
-            <dt>Status</dt>
-            <dd>{receipt.status.replaceAll("_", " ")}</dd>
-          </div>
-          {receipt.receivedAt ? (
-            <div>
-              <dt>Received on</dt>
-              <dd>
-                {new Date(receipt.receivedAt).toLocaleString("en-KE", {
-                  timeZone: "Africa/Nairobi",
-                  dateStyle: "medium",
-                  timeStyle: "short",
-                })}
-              </dd>
-            </div>
-          ) : null}
-        </dl>
-        {!completed ? (
-          <p className="receipt-notice">
-            Payment received · Allocations are not yet confirmed.
-          </p>
-        ) : null}
-        <LoanContributionBreakdown
-          posted
-          pending={!completed}
-          loans={receipt.loans}
-          snapshotAvailable={receipt.loanSnapshotAvailable}
-        />
-      </article>
+    <ContributionPrintReceipt
+      receiptNumber={receipt.mpesaReference || "Not available"}
+      memberNumber={member?.member.memberNumber ?? "Not available"}
+      memberName={
+        member?.member.profile?.personal?.fullName ?? "Unnamed member"
+      }
+      period={periodLabel}
+      receivedOn={
+        receipt.receivedAt
+          ? new Date(receipt.receivedAt).toLocaleString("en-KE", {
+              timeZone: "Africa/Nairobi",
+              dateStyle: "medium",
+              timeStyle: "short",
+            })
+          : "Not available"
+      }
+      paymentMethod="M-Pesa"
+      paymentDetailLabel="Phone"
+      paymentDetail={phone || "Not available"}
+      amount={receipt.amount}
+      contributionRows={[
+        {
+          label: "M-Pesa payment received",
+          value: formatMoney(receipt.amount).replace(/^KES /, ""),
+        },
+      ]}
+      loanRows={loanRows}
+      notice={
+        !completed
+          ? "Payment received · Allocations are not yet confirmed."
+          : undefined
+      }
+    />
   );
 }

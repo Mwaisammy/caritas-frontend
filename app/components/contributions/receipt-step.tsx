@@ -10,84 +10,18 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   loadCashReceiptDetailsAction,
   recoverCashReceiptAction,
   type CashMemberState,
   type CashMutationState,
 } from "@/app/dashboard/contributions/actions";
-import { allocationLabel, formatMoney } from "./contribution-utils";
-
-function amountWords(value: bigint): string {
-  const small = [
-    "Zero",
-    "One",
-    "Two",
-    "Three",
-    "Four",
-    "Five",
-    "Six",
-    "Seven",
-    "Eight",
-    "Nine",
-    "Ten",
-    "Eleven",
-    "Twelve",
-    "Thirteen",
-    "Fourteen",
-    "Fifteen",
-    "Sixteen",
-    "Seventeen",
-    "Eighteen",
-    "Nineteen",
-  ];
-
-  if (value < BigInt(20)) return small[Number(value)];
-
-  if (value < BigInt(100)) {
-    return (
-      [
-        "",
-        "",
-        "Twenty",
-        "Thirty",
-        "Forty",
-        "Fifty",
-        "Sixty",
-        "Seventy",
-        "Eighty",
-        "Ninety",
-      ][Number(value / BigInt(10))] +
-      (value % BigInt(10) ? ` ${amountWords(value % BigInt(10))}` : "")
-    );
-  }
-
-  for (const [scale, label] of [
-    [BigInt("1000000000000"), "Trillion"],
-    [BigInt(1_000_000_000), "Billion"],
-    [BigInt(1_000_000), "Million"],
-    [BigInt(1_000), "Thousand"],
-    [BigInt(100), "Hundred"],
-  ] as const) {
-    if (value >= scale) {
-      return `${amountWords(value / scale)} ${label}${
-        value % scale ? ` ${amountWords(value % scale)}` : ""
-      }`;
-    }
-  }
-
-  return "";
-}
+import {
+  allocationLabel,
+  formatMoney,
+  formatReceiptLoanAmount,
+} from "./contribution-utils";
+import { ContributionPrintReceipt } from "./contribution-print-receipt";
 
 export function ReceiptStep({
   memberState,
@@ -171,6 +105,68 @@ export function ReceiptStep({
     (memberState?.member.id === receipt.memberId
       ? memberState.member
       : undefined);
+  const loanAllocations = allocations.filter(
+    (item) => item.type === "CONTRIBUTION_ALLOCATION_TYPE_LOAN_PRINCIPAL",
+  );
+  const contributionRows: {
+    label: string;
+    value: string;
+    highlight?: boolean;
+  }[] = allocations
+    .filter(
+      (item) => item.type !== "CONTRIBUTION_ALLOCATION_TYPE_LOAN_PRINCIPAL",
+    )
+    .map((item) => ({
+      key: `${item.type}-${item.targetId ?? "general"}`,
+      label: item.displayLabel || allocationLabel(item.type),
+      value: formatMoney(item.amount).replace(/^KES /, ""),
+    }));
+  if (!receipt.loanSnapshotAvailable || !receipt.loans?.length) {
+    contributionRows.push(
+      ...loanAllocations.map((item) => ({
+        key: `${item.type}-${item.targetId ?? "general"}`,
+        label: item.displayLabel || allocationLabel(item.type),
+        value: formatMoney(item.amount).replace(/^KES /, ""),
+      })),
+    );
+  }
+  if (shareBalance) {
+    contributionRows.push({
+      label: "Current share balance",
+      value: formatMoney(shareBalance).replace(/^KES /, ""),
+      highlight: true,
+    });
+  }
+  const loanRows = receipt.loanSnapshotAvailable && receipt.loans?.length
+    ? (receipt.loans ?? []).flatMap((loan, index) =>
+        ([
+          ["Opening principal", loan.openingPrincipal],
+          ["Interest this month", loan.periodInterest],
+          ["Earlier interest owed", loan.earlierInterestDue],
+          ["Interest owed", loan.interestDue],
+          ["Penalties owed", loan.penaltyDue],
+          ["Loan payment", loan.payment],
+          ["Principal paid", loan.principalPaid],
+          ["Interest paid", loan.interestPaid],
+          ["Penalties paid", loan.penaltyPaid],
+          ["Overpayment credit", loan.credit],
+          ["Interest remaining", loan.interestRemaining],
+          ["Principal after payment", loan.principalRemaining],
+        ] as const).map(([label, value]) => ({
+          key: `${loan.loanId}-${label}`,
+          label: `Loan ${index + 1} ${label.toLowerCase()}`,
+          value: formatReceiptLoanAmount(value),
+        })),
+      )
+    : receipt.loanSnapshotAvailable
+      ? [{ label: "No loan payments were due", value: "—" }]
+      : [{ label: "Loan breakdown unavailable", value: "See loan ledger" }];
+  if (!contributionRows.length) {
+    contributionRows.push({
+      label: "No contribution allocations",
+      value: "—",
+    });
+  }
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
@@ -240,275 +236,40 @@ export function ReceiptStep({
         </div>
       )}
 
-      <article className="cash-receipt" aria-label="Cash contribution receipt">
-        <header className="receipt-heading">
-          <h1>Our Lady of Consolata Sagana Kabiruini Parish</h1>
-          <p>Caritas SACCO · Cash contribution receipt</p>
-        </header>
-
-        <Separator />
-
-        <dl className="receipt-member">
-          <div>
-            <dt>Receipt No.</dt>
-            <dd>{receipt.internalReceiptReference}</dd>
-          </div>
-
-          <div>
-            <dt>Member No.</dt>
-            <dd>{member?.memberNumber ?? "Not available"}</dd>
-          </div>
-
-          <div>
-            <dt>Name</dt>
-            <dd>{member?.profile?.personal?.fullName ?? "Unnamed member"}</dd>
-          </div>
-
-          <div>
-            <dt>For month</dt>
-            <dd>
-              {new Date(
-                receipt.contributionPeriod.slice(0, 7) + "-01T00:00:00+03:00",
-              ).toLocaleDateString("en-KE", {
-                month: "long",
-                year: "numeric",
+      <ContributionPrintReceipt
+        receiptNumber={receipt.internalReceiptReference}
+        memberNumber={member?.memberNumber ?? "Not available"}
+        memberName={member?.profile?.personal?.fullName ?? "Unnamed member"}
+        period={new Date(
+          receipt.contributionPeriod.slice(0, 7) + "-01T00:00:00+03:00",
+        ).toLocaleDateString("en-KE", {
+          month: "long",
+          year: "numeric",
+          timeZone: "Africa/Nairobi",
+        })}
+        receivedOn={
+          receipt.receivedAt
+            ? new Date(receipt.receivedAt).toLocaleString("en-KE", {
                 timeZone: "Africa/Nairobi",
-              })}
-            </dd>
-          </div>
-
-          <div>
-            <dt>Received on</dt>
-            <dd>
-              {receipt.receivedAt
-                ? new Date(receipt.receivedAt).toLocaleString("en-KE", {
-                    timeZone: "Africa/Nairobi",
-                    dateStyle: "medium",
-                    timeStyle: "short",
-                  })
-                : "Not available"}
-            </dd>
-          </div>
-        </dl>
-
-        <Separator />
-
-        {!completed && (
-          <p className="receipt-notice">
-            Cash received · {receipt.status.replaceAll("_", " ")} · Balances are
-            not yet confirmed.
-          </p>
-        )}
-
-        <div className="receipt-columns">
-          <section
-            aria-label={
-              completed ? "Contribution payments" : "Recorded allocation plan"
-            }
-          >
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead scope="col">
-                    {completed ? "Being paid for" : "Recorded allocation plan"}
-                  </TableHead>
-                  <TableHead scope="col">Amt. paid</TableHead>
-                </TableRow>
-              </TableHeader>
-
-              <TableBody>
-                {allocations.map((item) => {
-                  const [label, ...reason] = (
-                    item.displayLabel || allocationLabel(item.type)
-                  ).split(" · ");
-
-                  return (
-                    <TableRow key={item.type + (item.targetId ?? "general")}>
-                      <TableCell>
-                        {label}
-
-                        {reason.length > 0 && (
-                          <small>{reason.join(" · ")}</small>
-                        )}
-
-                        {!completed && (
-                          <small>{item.status.replaceAll("_", " ")}</small>
-                        )}
-                      </TableCell>
-
-                      <TableCell>{formatMoney(item.amount)}</TableCell>
-                    </TableRow>
-                  );
-                })}
-
-                <TableRow data-highlight="true">
-                  <TableCell>
-                    Current share balance
-                    <small>Balance at the time of lookup</small>
-                  </TableCell>
-
-                  <TableCell>
-                    {!needsShareBalance ? (
-                      "Not applicable"
-                    ) : completed ? (
-                      loadingDetails ? (
-                        <>
-                          <Skeleton className="ml-auto h-4 w-24 print:hidden" />
-                          <span className="hidden print:inline">
-                            Loading balance
-                          </span>
-                        </>
-                      ) : (
-                        formatMoney(shareBalance)
-                      )
-                    ) : (
-                      "Pending allocation"
-                    )}
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-
-            <p className="receipt-note">
-              Loan payments include principal, interest, penalties and any
-              credit shown alongside.
-            </p>
-          </section>
-
-          <section aria-label="Saved loan payment breakdown">
-            {!completed ? (
-              <p className="receipt-note">
-                Loan details will appear when processing is complete.
-              </p>
-            ) : !receipt.loanSnapshotAvailable ? (
-              <p className="receipt-note">
-                Loan details are not available on this receipt. Check the loan
-                ledger for payment history.
-              </p>
-            ) : !receipt.loans?.length ? (
-              <p className="receipt-note">
-                No loan payments were due when this receipt was issued.
-              </p>
-            ) : (
-              receipt.loans.map((loan) => (
-                <div className="receipt-loan" key={loan.loanId}>
-                  <h2>Loan payment · {loan.period.slice(0, 7)}</h2>
-
-                  {!loan.payable ? (
-                    <p className="receipt-note">
-                      No payment was due for this loan in this period.
-                    </p>
-                  ) : (
-                    <>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead scope="col">Loan details</TableHead>
-                            <TableHead scope="col">Amount (KES)</TableHead>
-                          </TableRow>
-                        </TableHeader>
-
-                        <TableBody>
-                          {[
-                            [
-                              "Opening principal for the month",
-                              loan.openingPrincipal,
-                            ],
-                            ["Principal before payment", loan.principalDue],
-                            ["Interest for this month", loan.periodInterest],
-                            [
-                              "Unpaid earlier interest",
-                              loan.earlierInterestDue,
-                            ],
-                            ["Interest owed before payment", loan.interestDue],
-                            ["Penalties owed", loan.penaltyDue],
-                            ["Loan payment received", loan.payment],
-                            ["Principal paid", loan.principalPaid],
-                            ["Interest paid", loan.interestPaid],
-                            ["Penalties paid", loan.penaltyPaid],
-                            ["Overpayment credit", loan.credit],
-                            [
-                              "Interest remaining unpaid",
-                              loan.interestRemaining,
-                            ],
-                            [
-                              "Principal after payment",
-                              loan.principalRemaining,
-                            ],
-                          ].map(([label, value]) => {
-                            const [whole, fraction = ""] = value.split(".");
-
-                            return (
-                              <TableRow
-                                key={label}
-                                data-highlight={
-                                  label === "Principal after payment" ||
-                                  undefined
-                                }
-                              >
-                                <TableCell>{label}</TableCell>
-
-                                <TableCell>
-                                  {whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}.
-                                  {fraction.padEnd(2, "0")}
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
-
-                      <p className="receipt-note">
-                        Monthly rate: {Number(loan.interestRate) * 100}%.
-                        Figures are saved as they were when this payment was
-                        recorded.
-                      </p>
-                    </>
-                  )}
-                </div>
-              ))
-            )}
-
-            <Table aria-label="Total cash received">
-              <TableBody>
-                <TableRow data-highlight="true" className="receipt-total">
-                  <TableCell>Total amount paid</TableCell>
-                  <TableCell>{formatMoney(receipt.amount)}</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </section>
-        </div>
-
-        <Separator />
-
-        <p className="receipt-words">
-          <strong>Amount in words: </strong>
-          {receipt.amount
-            ? amountWords(BigInt(receipt.amount.units || "0")) +
-              " shillings and " +
-              amountWords(
-                BigInt(Math.floor((receipt.amount.nanos || 0) / 10_000_000)),
-              ) +
-              " cents"
-            : "Not available"}
-        </p>
-
-        <footer className="receipt-footer">
-          <p>
-            Payment method<strong>Cash</strong>
-          </p>
-
-          <div className="receipt-signature">
-            <span>Sign</span>
-          </div>
-
-          <div className="receipt-stamp">
-            <span>Stamp</span>
-          </div>
-        </footer>
-      </article>
-
+                dateStyle: "medium",
+                timeStyle: "short",
+              })
+            : "Not available"
+        }
+        paymentMethod="Cash"
+        paymentDetailLabel="Received by"
+        paymentDetail={state.session?.cashierName ?? "________________"}
+        amount={receipt.amount}
+        contributionRows={contributionRows}
+        loanRows={loanRows}
+        notice={
+          !completed
+            ? "Cash received · " +
+              receipt.status.replaceAll("_", " ") +
+              " · Balances are not yet confirmed."
+            : undefined
+        }
+      />
       <div className="flex flex-wrap gap-2 print:hidden">
         <Button
           disabled={Boolean(printDisabledReason)}

@@ -115,6 +115,12 @@ export function formatDecimalMoney(value: string) {
   return `KES ${units.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}.${fraction.padEnd(2, "0").slice(0, 2)}`;
 }
 
+// formatReceiptLoanAmount preserves the ledger's fractional-cent precision on printed receipts.
+export function formatReceiptLoanAmount(value: string) {
+  const [units, fraction = ""] = value.split(".");
+  return `${units.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}.${fraction.padEnd(2, "0")}`;
+}
+
 // formatMinorUnits renders locally totalled integer cents.
 export function formatMinorUnits(value: number) {
   const units = String(Math.floor(value / 100)).replace(
