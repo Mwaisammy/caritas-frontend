@@ -1,5 +1,5 @@
 import Link from "next/link";
-import {notFound} from "next/navigation";
+import { notFound } from "next/navigation";
 import {
   ArrowLeft,
   BriefcaseBusiness,
@@ -14,12 +14,12 @@ import {
   UserRound,
 } from "lucide-react";
 
-import {OpenAccountDialog} from "@/app/components/shares-ui/open-account-dialog";
-import {Button} from "@/components/ui/button";
-import {GoApiError} from "@/lib/server/go-api";
-import {getMember, getMemberStatusHistory} from "@/lib/server/members-api";
-import {MEMBER_BRANCH_ID} from "../config";
-import {EditMemberSidebar, MemberLifecycleForms} from "../member-forms";
+import { OpenAccountDialog } from "@/app/components/shares-ui/open-account-dialog";
+import { Button } from "@/components/ui/button";
+import { GoApiError } from "@/lib/server/go-api";
+import { getMember, getMemberStatusHistory } from "@/lib/server/members-api";
+import { MEMBER_BRANCH_ID } from "../config";
+import { EditMemberSidebar, MemberLifecycleForms } from "../member-forms";
 import {
   buttonClass,
   formatDate,
@@ -27,19 +27,17 @@ import {
   MemberStatusBadge,
   relationshipLabel,
 } from "../member-ui";
-import {getShareAccount} from "@/lib/server/shares-api";
+import { getShareAccount } from "@/lib/server/shares-api";
 
 function InfoItem({
   icon: Icon,
   label,
   value,
 }: {
-  icon: React.ComponentType<{className?: string}>;
+  icon: React.ComponentType<{ className?: string }>;
   label: string;
   value?: React.ReactNode;
 }) {
-
-  
   return (
     <div className="flex gap-3">
       <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-stone-100 text-stone-500">
@@ -67,18 +65,18 @@ export default async function MemberDetailsPage({
   params,
   searchParams,
 }: {
-  params: Promise<{memberId: string}>;
-  searchParams: Promise<{historyToken?: string}>;
+  params: Promise<{ memberId: string }>;
+  searchParams: Promise<{ historyToken?: string }>;
 }) {
-  const [{memberId}, query] = await Promise.all([params, searchParams]);
+  const [{ memberId }, query] = await Promise.all([params, searchParams]);
   const historyToken =
     typeof query.historyToken === "string" ? query.historyToken : "";
   const [memberResult, historyResult] = await Promise.allSettled([
-    getMember({branchId: MEMBER_BRANCH_ID, memberId}),
+    getMember({ branchId: MEMBER_BRANCH_ID, memberId }),
     getMemberStatusHistory({
       memberId,
       pageSize: 20,
-      ...(historyToken ? {pageToken: historyToken} : {}),
+      ...(historyToken ? { pageToken: historyToken } : {}),
     }),
   ]);
 
@@ -96,7 +94,7 @@ export default async function MemberDetailsPage({
   const history =
     historyResult.status === "fulfilled"
       ? historyResult.value
-      : {transitions: [], nextPageToken: ""};
+      : { transitions: [], nextPageToken: "" };
   const personal = member.profile?.personal;
   const employment = member.profile?.employment;
   const identification = member.profile?.idDocument;
@@ -137,12 +135,12 @@ export default async function MemberDetailsPage({
             </div>
             <div className="min-w-0 flex-1 sm:pb-1">
               <div className="flex flex-wrap items-center gap-3">
-                <h1 className="truncate text-2xl font-bold tracking-tight text-stone-950 sm:text-3xl">
+                <h1 className="truncate text-2xl font-bold tracking-wide text-stone-950 sm:text-3xl">
                   {personal?.fullName ?? "Unnamed member"}
                 </h1>
                 <MemberStatusBadge status={member.status} />
               </div>
-              <p className="mt-1 font-mono text-sm text-stone-500">
+              <p className="mt-1 font-mono text-xl text-stone-500">
                 Member no. {member.memberNumber}
               </p>
             </div>

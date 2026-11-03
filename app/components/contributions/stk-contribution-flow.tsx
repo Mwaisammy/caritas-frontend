@@ -8,6 +8,7 @@ import {
   useTransition,
 } from "react";
 import { z } from "zod";
+import { PrinterIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   AlertDialog,
@@ -74,7 +75,6 @@ export function STKContributionFlow({
   onLockChange: (locked: boolean) => void;
 }) {
   const submission = useRef<FormData | null>(null);
-  const checking = useRef(false);
   const [context, setContext] = useState<CashContext | null>(null);
   const [startupError, setStartupError] = useState("");
   const [saved, setSaved] = useState(false);
@@ -109,6 +109,7 @@ export function STKContributionFlow({
   useEffect(() => {
     if (!saved || terminal) return;
     let active = true;
+    let pollCount = 0;
     const timer = setInterval(async () => {
       if (
         !submission.current ||
@@ -119,8 +120,11 @@ export function STKContributionFlow({
       setCheckingStatus(true);
       const savedSubmission = submission.current;
       try {
+        // Query Daraja every fifth status read to keep updates quick without over-querying it.
+        const queryProvider = ++pollCount % 5 === 0;
         const result = await checkSTKContributionAction(
           String(savedSubmission.get("idempotencyKey")),
+          queryProvider,
         );
         if (active && submission.current === savedSubmission && result?.ok) {
           setRequest(result.request);
@@ -171,7 +175,7 @@ export function STKContributionFlow({
         pollInFlight.current = false;
         if (active) setCheckingStatus(false);
       }
-    }, 5000);
+    }, 3000);
     return () => {
       active = false;
       clearInterval(timer);
@@ -330,7 +334,7 @@ export function STKContributionFlow({
               : "M-Pesa prompt needs confirmation",
             description: result.definitive
               ? "Check the phone number and contribution details, then try again."
-              : "We couldn't confirm whether the prompt was sent. Check status or retry this saved request; don't start another payment.",
+              : "We couldn't confirm the prompt yet. We'll keep checking this saved request; please don't start another payment.",
             type: result.definitive ? "error" : "warning",
           });
         }
@@ -338,12 +342,12 @@ export function STKContributionFlow({
         setState({
           ok: false,
           message:
-            "The result is unconfirmed. Check status before starting another payment.",
+            "We couldn't confirm the prompt yet. We'll keep checking this saved request; please don't start another payment.",
         });
         toast.add({
           title: "M-Pesa prompt needs confirmation",
           description:
-            "We couldn't confirm whether the prompt was sent. Check status or retry this saved request; don't start another payment.",
+            "We couldn't confirm the prompt yet. We'll keep checking this saved request; please don't start another payment.",
           type: "warning",
         });
       } finally {
@@ -351,93 +355,11 @@ export function STKContributionFlow({
       }
     });
 
-  // Checking state never calls initiation or clears an uncertain request.
-  const checkStatus = () =>
-    startPayment(async () => {
-      if (
-        !submission.current ||
-        pollInFlight.current ||
-        submissionInFlight.current
-      ) return;
-      pollInFlight.current = true;
-      setCheckingStatus(true);
-      const savedSubmission = submission.current;
-      try {
-        const result = await checkSTKContributionAction(
-          String(savedSubmission.get("idempotencyKey")),
-          true,
-        );
-        if (submission.current !== savedSubmission) return;
-        setState(result);
-        if (result?.ok) {
-          const current = result.request;
-          setRequest(current);
-          if (current.receipt?.status === "completed") {
-            toast.add({
-              title: "Contribution completed",
-              description: "Payment and required allocations are complete.",
-              type: "success",
-            });
-          } else if (
-            current.recoveryStatus === "received_needs_receipt" ||
-            current.recoveryStatus === "received_needs_review" ||
-            current.recoveryStatus === "needs_review" ||
-            current.receipt?.status === "failed" ||
-            current.receipt?.status === "manual_review"
-          ) {
-            toast.add({
-              title: "Payment received; review needed",
-              description:
-                "Staff must reconcile the contribution before another payment is requested.",
-              type: "warning",
-            });
-          } else if (
-            current.status === "CONTRIBUTION_PAYMENT_REQUEST_STATUS_FAILED" &&
-            !current.receipt
-          ) {
-            toast.add({
-              title: "M-Pesa payment not completed",
-              description:
-                "Confirm whether money was deducted before retrying the saved request.",
-              type: "error",
-            });
-          } else {
-            toast.add({
-              title: "Payment still awaiting confirmation",
-              description:
-                "Check the phone receiving the prompt, then check the status again shortly.",
-              type: "info",
-            });
-          }
-        } else if (result) {
-          toast.add({
-            title: "Payment status unavailable",
-            description:
-              "We couldn't confirm the payment yet. The saved request is retained; check again shortly.",
-            type: "warning",
-          });
-        }
-      } catch {
-        if (submission.current !== savedSubmission) return;
-        setState({
-          ok: false,
-          message:
-            "Unable to check status. Try again; the saved request is retained.",
-        });
-        toast.add({
-          title: "Payment status unavailable",
-          description:
-            "We couldn't confirm the payment yet. The saved request is retained; check again shortly.",
-          type: "warning",
-        });
-      } finally {
-        pollInFlight.current = false;
-        setCheckingStatus(false);
-      }
-    });
-
   const receipt = request?.receipt;
   const completed = receipt?.status === "completed";
+  const paymentReceived =
+    request?.status === "CONTRIBUTION_PAYMENT_REQUEST_STATUS_COMPLETED" ||
+    Boolean(receipt);
   const failed =
     request?.recoveryStatus === "provider_failed" ||
     (request?.status === "CONTRIBUTION_PAYMENT_REQUEST_STATUS_FAILED" &&
@@ -454,7 +376,7 @@ export function STKContributionFlow({
       ? "review"
       : failed
         ? "failed"
-        : receipt
+        : paymentReceived
           ? "processing"
           : pending && !request
             ? "sending"
@@ -466,23 +388,53 @@ export function STKContributionFlow({
                   ? "awaiting"
                   : "unconfirmed";
   const title = completed
-    ? "Contribution completed"
+    ? "Payment complete"
     : needsReview
       ? paymentReceivedNeedsReview
-        ? "Payment received. Contribution needs review"
-        : "Payment status needs staff review"
+        ? "Payment received"
+        : "Payment needs checking"
       : failed
-        ? "Payment request unsuccessful"
-        : receipt
-          ? "Payment received. Processing contribution"
+        ? "Payment not completed"
+        : paymentReceived
+          ? "Payment received"
           : state?.ok === false
-            ? "Payment status unconfirmed"
+            ? "We can’t confirm the payment yet"
             : request?.status === "CONTRIBUTION_PAYMENT_REQUEST_STATUS_PENDING"
-              ? "Awaiting payment confirmation"
+              ? "Waiting for M-Pesa"
               : checkingStatus
-                ? "Checking saved payment"
-                : "Payment request status unavailable";
-
+                ? "Checking payment"
+                : "Sending payment request";
+  const paymentDescription = completed
+    ? "Your contribution and loan payments are complete. Your receipt is ready to print."
+    : needsReview
+      ? paymentReceivedNeedsReview
+        ? "A staff member needs to review this before another payment."
+        : "Please ask staff to check this payment before trying again."
+      : failed
+        ? "Please check whether money was deducted before trying again."
+        : paymentReceived
+          ? "Payment confirmed. We’re applying it to your contribution and loans."
+          : paymentStatus === "sending"
+            ? "We’re sending the prompt to the phone shown above."
+            : paymentStatus === "awaiting"
+              ? "We’ve sent the prompt. Enter your PIN on the phone shown above."
+              : paymentStatus === "verifying"
+                ? "We’re checking the saved request. Please don’t send another payment."
+                : "We haven’t received confirmation yet. Your request is saved, so please don’t pay again.";
+  const paymentProgressStep: 1 | 2 | 3 | 4 = completed
+    ? 4
+    : paymentReceived || paymentReceivedNeedsReview
+      ? 3
+      : pending && !request
+        ? 1
+        : 2;
+  const paymentProgressState = completed
+    ? "completed"
+    : needsReview
+      ? "review"
+      : failed
+        ? "failed"
+        : "active";
   // StageProgress keeps M-Pesa steps clear without changing the shared cash flow screens.
   const stageProgress = (
     step: 1 | 2 | 3 | 4,
@@ -572,89 +524,24 @@ export function STKContributionFlow({
 
   if (saved)
     return (
-      <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
-        {stageProgress(
-          receipt ? 4 : 3,
-          receipt ? "Contribution status" : "Confirm payment",
-          completed
-            ? "Payment and allocations are complete."
-            : needsReview
-              ? "Payment needs staff reconciliation."
-              : failed
-                ? "The payment request failed."
-                : "The saved request is checked for confirmation.",
-          completed
-            ? "completed"
-            : needsReview
-              ? "review"
-              : failed
-                ? "failed"
-                : "active",
-        )}
-        <Card className="mx-auto w-full max-w-2xl" aria-busy={pending}>
+      <Card className="mx-auto w-full max-w-2xl" aria-busy={pending}>
           <CardHeader>
             <CardTitle>M-Pesa contribution</CardTitle>
             <CardDescription>
-              Check the stored payment outcome. Checking status does not send
-              another prompt.
+              {request?.amount
+                ? formatMoney(request.amount)
+                : formatDecimalMoney(draft?.amount ?? "0")}{" "}
+              · Prompt to {phone || "the selected phone"}
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            <STKPaymentStatus
-              title={title}
-              description={
-                completed
-                  ? "The receipt and every required allocation are complete."
-                  : needsReview
-                    ? paymentReceivedNeedsReview
-                      ? "Staff must reconcile the received payment before another request is made."
-                      : "Staff must verify this payment status before another request is made."
-                    : failed
-                      ? "Check whether money was deducted before trying again."
-                      : receipt
-                        ? "Payment is received. The contribution receipt is still processing."
-                        : paymentStatus === "sending"
-                          ? "Sending the saved M-Pesa request."
-                          : paymentStatus === "verifying"
-                            ? "Checking the saved request with M-Pesa."
-                            : paymentStatus === "awaiting"
-                              ? "The prompt was accepted. Ask the payer to enter their PIN on the receiving phone."
-                              : "We couldn't confirm the current status. The saved request is retained; check again shortly."
-              }
-              status={paymentStatus}
-              checking={pending || checkingStatus}
+            <STKProgress
+              step={paymentProgressStep}
+              state={paymentProgressState}
+              label={title}
+              detail={paymentDescription}
+              orientation="vertical"
             />
-            <dl className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <dt>Amount</dt>
-                <dd>
-                  {request?.amount
-                    ? formatMoney(request.amount)
-                    : formatDecimalMoney(draft?.amount ?? "0")}
-                </dd>
-              </div>
-              <div>
-                <dt>Contribution month</dt>
-                <dd>
-                  {request?.contributionPeriod?.slice(0, 7) ||
-                    draft?.contributionPeriod}
-                </dd>
-              </div>
-              <div>
-                <dt>Phone receiving prompt</dt>
-                <dd>{phone}</dd>
-              </div>
-              {request?.createdAt ? (
-                <div>
-                  <dt>Requested at</dt>
-                  <dd>
-                    {new Date(request.createdAt).toLocaleString("en-KE", {
-                      timeZone: "Africa/Nairobi",
-                    })}
-                  </dd>
-                </div>
-              ) : null}
-            </dl>
             {receipt ? (
               <STKReceipt
                 receipt={receipt}
@@ -664,18 +551,19 @@ export function STKContributionFlow({
                 completed={completed}
               />
             ) : null}
-            {state?.ok === false ? (
-              <Alert variant="destructive">
-                <AlertTitle>Status unavailable</AlertTitle>
-                <AlertDescription>{state.message}</AlertDescription>
-              </Alert>
-            ) : null}
+            <STKPaymentStatus
+              title={title}
+              description={paymentDescription}
+              status={paymentStatus}
+            />
           </CardContent>
           <CardFooter className="flex flex-wrap gap-3">
-            <Button disabled={pending || checkingStatus || completed || needsReview} onClick={checkStatus}>
-              {pending || checkingStatus ? <Spinner data-icon="inline-start" /> : null}
-              {pending || checkingStatus ? "Checking status…" : "Check status"}
-            </Button>
+            {completed ? (
+              <Button onClick={() => window.print()}>
+                <PrinterIcon data-icon="inline-start" />
+                Print receipt
+              </Button>
+            ) : null}
             {!request ? (
               <Button disabled={pending || checkingStatus} onClick={sendPrompt} variant="outline">
                 Retry same saved request
@@ -722,8 +610,7 @@ export function STKContributionFlow({
               </AlertDialog>
             )}
           </CardFooter>
-        </Card>
-      </div>
+      </Card>
     );
 
   if (draft && member)

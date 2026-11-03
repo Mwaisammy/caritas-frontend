@@ -136,7 +136,13 @@ export async function checkSTKContributionAction(idempotencyKey: string, queryPr
   try {
     const request = await getContributionPaymentRequest(idempotencyKey);
     if (!request.paymentRequestId) return { ok: false, message: "Payment status is unavailable. Check again." };
-    if (queryProvider && !request.receipt) await recoverDarajaPayment({ paymentRequestId: request.paymentRequestId, action: "query" });
+    if (queryProvider && !request.receipt) {
+      const recovered = await recoverDarajaPayment({
+        paymentRequestId: request.paymentRequestId,
+        action: "query",
+      });
+      return { ok: true, request: recovered.payment };
+    }
     return { ok: true, request };
   } catch (error) {
     const missing = error instanceof GoApiError && error.status === 404;

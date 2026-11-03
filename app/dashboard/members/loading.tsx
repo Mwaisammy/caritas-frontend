@@ -1,5 +1,5 @@
-import {RouteLoadingStripe} from "@/app/components/route-loading-stripe";
-import { LoadingMessage } from "@/app/components/loading-message";
+import { RouteLoadingStripe } from "@/app/components/route-loading-stripe";
+// import { LoadingMessage } from "@/app/components/loading-message";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // MembersLoading holds the directory layout steady while records stream in.
@@ -16,12 +16,15 @@ export default function MembersLoading() {
               <Skeleton className="mb-6 h-7 w-48 rounded bg-stone-200" />
               <div className="space-y-4">
                 {Array.from({ length: 6 }).map((_, index) => (
-                  <Skeleton className="h-14 w-full rounded bg-stone-100" key={index} />
+                  <Skeleton
+                    className="h-14 w-full rounded bg-stone-100"
+                    key={index}
+                  />
                 ))}
               </div>
             </div>
           </div>
-          <LoadingMessage message="Gathering the member directory..." overlay />
+          {/* <LoadingMessage message="Gathering the member directory..." overlay /> */}
         </div>
       </div>
     </>
