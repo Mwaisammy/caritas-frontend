@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import {
   BanknoteIcon,
   Loader,
+  LoaderCircle,
   PrinterIcon,
   UserRoundPlusIcon,
 } from "lucide-react";
@@ -137,30 +138,33 @@ export function ReceiptStep({
       highlight: true,
     });
   }
-  const loanRows = receipt.loanSnapshotAvailable && receipt.loans?.length
-    ? (receipt.loans ?? []).flatMap((loan, index) =>
-        ([
-          ["Opening principal", loan.openingPrincipal],
-          ["Interest this month", loan.periodInterest],
-          ["Earlier interest owed", loan.earlierInterestDue],
-          ["Interest owed", loan.interestDue],
-          ["Penalties owed", loan.penaltyDue],
-          ["Loan payment", loan.payment],
-          ["Principal paid", loan.principalPaid],
-          ["Interest paid", loan.interestPaid],
-          ["Penalties paid", loan.penaltyPaid],
-          ["Overpayment credit", loan.credit],
-          ["Interest remaining", loan.interestRemaining],
-          ["Principal after payment", loan.principalRemaining],
-        ] as const).map(([label, value]) => ({
-          key: `${loan.loanId}-${label}`,
-          label: `Loan ${index + 1} ${label.toLowerCase()}`,
-          value: formatReceiptLoanAmount(value),
-        })),
-      )
-    : receipt.loanSnapshotAvailable
-      ? [{ label: "No loan payments were due", value: "—" }]
-      : [{ label: "Loan breakdown unavailable", value: "See loan ledger" }];
+  const loanRows =
+    receipt.loanSnapshotAvailable && receipt.loans?.length
+      ? (receipt.loans ?? []).flatMap((loan, index) =>
+          (
+            [
+              ["Opening principal", loan.openingPrincipal],
+              ["Interest this month", loan.periodInterest],
+              ["Earlier interest owed", loan.earlierInterestDue],
+              ["Interest owed", loan.interestDue],
+              ["Penalties owed", loan.penaltyDue],
+              ["Loan payment", loan.payment],
+              ["Principal paid", loan.principalPaid],
+              ["Interest paid", loan.interestPaid],
+              ["Penalties paid", loan.penaltyPaid],
+              ["Overpayment credit", loan.credit],
+              ["Interest remaining", loan.interestRemaining],
+              ["Principal after payment", loan.principalRemaining],
+            ] as const
+          ).map(([label, value]) => ({
+            key: `${loan.loanId}-${label}`,
+            label: `Loan ${index + 1} ${label.toLowerCase()}`,
+            value: formatReceiptLoanAmount(value),
+          })),
+        )
+      : receipt.loanSnapshotAvailable
+        ? [{ label: "No loan payments were due", value: "—" }]
+        : [{ label: "Loan breakdown unavailable", value: "See loan ledger" }];
   if (!contributionRows.length) {
     contributionRows.push({
       label: "No contribution allocations",
@@ -195,7 +199,7 @@ export function ReceiptStep({
       {printDisabledReason && (
         <div className="flex flex-col gap-2 print:hidden">
           <p role="status" className="flex gap-4 items-center">
-            <Loader className="size-4 shrink-0 text-rose-700 motion-safe:animate-spin motion-reduce:animate-none" />
+            <LoaderCircle className="size-4 shrink-0 text-rose-700 motion-safe:animate-spin motion-reduce:animate-none" />
 
             <span className="text-muted-foreground">{printDisabledReason}</span>
           </p>

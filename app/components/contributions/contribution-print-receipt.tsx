@@ -115,16 +115,23 @@ export function ContributionPrintReceipt({
       aria-label={`${paymentMethod} contribution receipt`}
     >
       <header className="receipt-heading">
-        <div>
+        <Image
+          src="/caritas-logo.png"
+          alt="Caritas Sagana parish logo"
+          width={180}
+          height={108}
+          className="receipt-logo receipt-logo-left"
+        />
+        <div className="receipt-heading-copy">
           <h1>Our Lady of Consolata Sagana Kabiruini Parish</h1>
           <p>P.O. BOX 1004 KARATINA</p>
         </div>
         <Image
           src="/caritas-logo.png"
-          alt="Caritas Sagana"
+          alt="Caritas Sagana logo"
           width={180}
           height={108}
-          className="receipt-logo"
+          className="receipt-logo receipt-logo-right"
         />
       </header>
 
