@@ -75,9 +75,11 @@ export async function goApiPost<T>(
       body: JSON.stringify(body),
       // STK initiation allows 45s for Daraja and 15s to persist its checkout ID.
       // Disbursement rechecks collateral and writes up to 36 schedule rows before committing.
+      // Cash acceptance can take 8s, then synchronous allocation processing up to 30s.
       signal: AbortSignal.timeout(
         path === "/api/v1/contributions/initiate-daraja-stk" ? 75_000
-          : path === "/api/v1/loans/disburse" ? 60_000 : 10_000,
+          : path === "/api/v1/loans/disburse" ? 60_000
+          : path === "/api/v1/contributions/create-cash" ? 45_000 : 10_000,
       ),
     });
   } catch (error) {
