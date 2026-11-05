@@ -234,12 +234,15 @@
 
 .receipt-heading {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 180px minmax(0, 1fr) 180px;
   align-items: center;
   gap: 16px;
   border-bottom: 3px solid var(--receipt-ink);
   padding-bottom: 8px;
   text-align: center;
+}
+.receipt-heading-copy {
+  min-width: 0;
 }
 .receipt-heading h1 {
   color: var(--receipt-heading);
@@ -253,8 +256,11 @@
   font-weight: 700;
 }
 .receipt-logo {
-  width: 52px;
+  width: 180px;
   height: auto;
+}
+.receipt-logo-right {
+  justify-self: end;
 }
 .receipt-member {
   display: grid;
@@ -386,6 +392,27 @@
   .cash-receipt {
     padding: 16px;
   }
+  .receipt-heading {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "copy"
+      "left"
+      "right";
+    gap: 8px;
+  }
+  .receipt-heading-copy {
+    grid-area: copy;
+  }
+  .receipt-logo-left {
+    grid-area: left;
+    justify-self: center;
+    width: 180px;
+  }
+  .receipt-logo-right {
+    grid-area: right;
+    justify-self: center;
+    width: 180px;
+  }
   .receipt-heading h1 {
     font-size: 15px;
   }
@@ -402,9 +429,6 @@
 }
 
 @media print {
-  html:has(.cash-receipt) {
-    page: cash-receipt;
-  }
   html:has(.ceep-print) {
     page: ceep;
   }
@@ -423,13 +447,12 @@
 
   .cash-receipt {
     position: relative;
-    display: flex;
-    flex-direction: column;
+    display: block;
     box-sizing: border-box;
     width: 100%;
-    height: 280mm;
-    max-height: 280mm;
-    overflow: hidden;
+    height: auto;
+    max-height: none;
+    overflow: visible;
     margin: 0;
     border: 0;
     padding: 0;
@@ -447,7 +470,7 @@
   }
 
   .receipt-heading {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 180px minmax(0, 1fr) 180px;
     padding-bottom: 4mm;
   }
 
@@ -456,7 +479,7 @@
   }
 
   .receipt-logo {
-    width: 20mm;
+    width: 180px;
   }
 
   .receipt-member {
@@ -466,8 +489,6 @@
   }
 
   .receipt-columns {
-    flex: 1;
-    min-height: 0;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 5mm;
     padding: 3mm 0;
@@ -496,7 +517,6 @@
   }
 
   .receipt-total {
-    margin-top: auto;
     padding: 2mm;
     font-size: 12pt;
   }
@@ -515,7 +535,7 @@
   }
 
   .receipt-signoff {
-    margin-top: auto;
+    margin-top: 4mm;
     gap: 12mm;
   }
 
@@ -586,11 +606,6 @@
     padding: 4px;
     white-space: normal;
   }
-}
-
-@page cash-receipt {
-  size: A3 landscape;
-  margin: 8mm;
 }
 
 @page ceep {
