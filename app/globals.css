@@ -388,6 +388,44 @@
   border: 1px solid var(--receipt-heading);
   color: var(--receipt-heading);
 }
+.dividend-receipt {
+  width: 100%;
+  min-width: 0;
+}
+.dividend-receipt .receipt-heading {
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 12px;
+  text-align: left;
+}
+.dividend-receipt .receipt-logo {
+  width: 64px;
+}
+.dividend-receipt .receipt-heading h1 {
+  font-size: 14px;
+}
+.dividend-receipt-title {
+  margin-top: 12px;
+  color: var(--receipt-heading);
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.dividend-receipt .receipt-member {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.dividend-receipt .receipt-member > div {
+  display: block;
+}
+.dividend-receipt .receipt-member dt {
+  color: var(--receipt-heading);
+}
+.dividend-receipt .receipt-member dd,
+.dividend-receipt .receipt-footer strong {
+  overflow-wrap: anywhere;
+}
+.dividend-receipt .receipt-footer {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
 @media screen and (max-width: 600px) {
   .cash-receipt {
     padding: 16px;
@@ -429,6 +467,23 @@
 }
 
 @media print {
+  .dividend-receipt.cash-receipt {
+    max-width: 180mm;
+    margin: 0 auto;
+    font-size: 10pt;
+  }
+  .dividend-receipt .receipt-heading {
+    grid-template-columns: 24mm minmax(0, 1fr);
+  }
+  .dividend-receipt .receipt-logo {
+    width: 24mm;
+  }
+  .dividend-receipt .receipt-member {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .dividend-receipt .receipt-footer {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   html:has(.ceep-print) {
     page: ceep;
   }

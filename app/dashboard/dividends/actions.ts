@@ -33,14 +33,14 @@ export async function dividendAction(
         : operation === "choice"
           ? z
               .object({
-                allocationId: z.uuid(),
+                allocationId: z.guid(),
                 choice: z.enum(["cash", "shares"]),
               })
               .safeParse(input)
           : operation === "settle"
             ? z
                 .object({
-                  allocationId: z.uuid(),
+                  allocationId: z.guid(),
                   voucherReference: z.string().trim().max(200).optional(),
                   paymentDate: z
                     .union([z.iso.date(), z.literal("")])
@@ -84,8 +84,8 @@ export async function dividendAction(
         outstanding: money.optional(),
         allocations: z.array(
           z.object({
-            id: z.uuid().optional(),
-            memberId: z.uuid(),
+            id: z.guid().optional(),
+            memberId: z.guid(),
             memberNumber: z.string(),
             name: z.string(),
             shareBalance: z.string().regex(/^-?\d+(\.\d+)?$/),
@@ -100,8 +100,8 @@ export async function dividendAction(
                 qualifies: z.boolean(),
                 sources: z.array(
                   z.object({
-                    receiptId: z.uuid(),
-                    transactionId: z.uuid(),
+                    receiptId: z.guid(),
+                    transactionId: z.guid(),
                     amount: money,
                   }),
                 ),
