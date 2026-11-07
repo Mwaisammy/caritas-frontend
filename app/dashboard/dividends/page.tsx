@@ -34,6 +34,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { dividendAction } from "./actions";
+import Image from "next/image";
 
 export default function DividendsPage() {
   const [report, setReport] = useState<
@@ -539,6 +540,7 @@ export default function DividendsPage() {
                 )}
 
                 {selected.settledAt ? (
+                  <>
                   <Alert>
                     <AlertTitle>
                       {selected.choice === "cash"
@@ -566,6 +568,36 @@ export default function DividendsPage() {
                       )}
                     </AlertDescription>
                   </Alert>
+                  {selected.choice === "cash" && selected.id && (
+                    <>
+                      <article className="cash-receipt dividend-receipt" aria-label="Cash dividend receipt">
+                        <header className="receipt-heading">
+                          <Image src="/caritas-logo.png" alt="Caritas logo" width={180} height={108} className="receipt-logo receipt-logo-left" />
+                          <div className="receipt-heading-copy">
+                            <h1>Our Lady of Consolata Sagana Kabiruini Parish</h1>
+                            <p>P.O. BOX 1004 KARATINA</p>
+                          </div>
+                        </header>
+                        <h2 className="dividend-receipt-title">Cash dividend receipt</h2>
+                        <dl className="receipt-member">
+                          <div><dt>Receipt No:</dt><dd>DIV/{report.financialYear}/{selected.id.replaceAll("-", "").toUpperCase()}</dd></div>
+                          <div><dt>Member No:</dt><dd>{selected.memberNumber}</dd></div>
+                          <div><dt>Name:</dt><dd>{selected.name}</dd></div>
+                          <div><dt>Financial year:</dt><dd>{report.financialYear}</dd></div>
+                          <div><dt>Payment date:</dt><dd>{dates.format(new Date(`${selected.paymentDate}T12:00:00+03:00`))}</dd></div>
+                        </dl>
+                        <div className="receipt-total"><strong>DIVIDEND PAID IN CASH</strong><strong>{money(selected.amount)}</strong></div>
+                        <footer className="receipt-footer">
+                          <p>Payment method<strong>Cash</strong></p>
+                          <p>Signed voucher / register<strong>{selected.voucherReference}</strong></p>
+                          <p>Paid on<strong>{dates.format(new Date(`${selected.paymentDate}T12:00:00+03:00`))}</strong></p>
+                        </footer>
+                        <p className="receipt-notice">Payment confirmed. This receipt is for a dividend, not a share contribution.</p>
+                      </article>
+                      <Button type="button" variant="outline" onClick={() => window.print()}>Print dividend receipt</Button>
+                    </>
+                  )}
+                  </>
                 ) : !selected.eligible ? (
                   <Alert>
                     <AlertTitle>Not eligible this year</AlertTitle>
