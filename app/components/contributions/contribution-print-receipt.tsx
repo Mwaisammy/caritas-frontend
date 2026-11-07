@@ -103,7 +103,8 @@ export function ContributionPrintReceipt({
   const columnsFor = (rows: ReceiptLine[]) =>
     Math.min(4, Math.max(1, Math.ceil(rows.length / 8)));
   const rowCount = Math.max(contributionRows.length, loanRows.length);
-  const density = rowCount > 24 ? "tight" : rowCount > 12 ? "compact" : "normal";
+  const density =
+    rowCount > 24 ? "tight" : rowCount > 12 ? "compact" : "normal";
   const amountInWords = `${amountWords(BigInt(amount.units || "0"))} shillings and ${amountWords(
     BigInt(Math.floor((amount.nanos || 0) / 10_000_000)),
   )} cents`;
@@ -123,7 +124,7 @@ export function ContributionPrintReceipt({
           className="receipt-logo receipt-logo-left"
         />
         <div className="receipt-heading-copy">
-          <h1>Our Lady of Consolata Sagana Kabiruini Parish</h1>
+          <h1>Our Lady of Consolata Sagana Kabiru-ini Parish</h1>
           <p>P.O. BOX 1004 KARATINA</p>
         </div>
         <Image
@@ -187,10 +188,7 @@ export function ContributionPrintReceipt({
             <span>LOAN DETAILS</span>
             <span>AMOUNT (KES)</span>
           </h2>
-          <div
-            className="receipt-lines"
-            data-columns={columnsFor(loanRows)}
-          >
+          <div className="receipt-lines" data-columns={columnsFor(loanRows)}>
             {loanRows.map((row) => (
               <div className="receipt-line" key={row.key ?? row.label}>
                 <span>{row.label}</span>
@@ -215,7 +213,8 @@ export function ContributionPrintReceipt({
           Payment method<strong>{paymentMethod}</strong>
         </p>
         <p>
-          {paymentDetailLabel}<strong>{paymentDetail}</strong>
+          {paymentDetailLabel}
+          <strong>{paymentDetail}</strong>
         </p>
         <p>
           Date<strong>{receivedOn}</strong>

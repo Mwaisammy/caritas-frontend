@@ -115,7 +115,8 @@ export function STKContributionFlow({
         !submission.current ||
         pollInFlight.current ||
         submissionInFlight.current
-      ) return;
+      )
+        return;
       pollInFlight.current = true;
       setCheckingStatus(true);
       const savedSubmission = submission.current;
@@ -384,7 +385,8 @@ export function STKContributionFlow({
               ? "verifying"
               : state?.ok === false
                 ? "unconfirmed"
-                : request?.status === "CONTRIBUTION_PAYMENT_REQUEST_STATUS_PENDING"
+                : request?.status ===
+                    "CONTRIBUTION_PAYMENT_REQUEST_STATUS_PENDING"
                   ? "awaiting"
                   : "unconfirmed";
   const title = completed
@@ -525,91 +527,98 @@ export function STKContributionFlow({
   if (saved)
     return (
       <Card className="mx-auto w-full max-w-2xl" aria-busy={pending}>
-          <CardHeader>
-            <CardTitle>M-Pesa contribution</CardTitle>
-            <CardDescription>
-              {request?.amount
-                ? formatMoney(request.amount)
-                : formatDecimalMoney(draft?.amount ?? "0")}{" "}
-              · Prompt to {phone || "the selected phone"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <STKProgress
-              step={paymentProgressStep}
-              state={paymentProgressState}
-              label={title}
-              detail={paymentDescription}
-              orientation="vertical"
+        <CardHeader>
+          <CardTitle>M-Pesa contribution</CardTitle>
+          <CardDescription>
+            {request?.amount
+              ? formatMoney(request.amount)
+              : formatDecimalMoney(draft?.amount ?? "0")}{" "}
+            · Prompt to {phone || "the selected phone"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <STKProgress
+            step={paymentProgressStep}
+            state={paymentProgressState}
+            label={title}
+            detail={paymentDescription}
+            orientation="vertical"
+          />
+          {receipt ? (
+            <STKReceipt
+              receipt={receipt}
+              member={member}
+              period={
+                request?.contributionPeriod?.slice(0, 7) ||
+                draft?.contributionPeriod ||
+                ""
+              }
+              phone={phone}
+              completed={completed}
             />
-            {receipt ? (
-              <STKReceipt
-                receipt={receipt}
-                member={member}
-                period={request?.contributionPeriod?.slice(0, 7) || draft?.contributionPeriod || ""}
-                phone={phone}
-                completed={completed}
-              />
-            ) : null}
-            <STKPaymentStatus
-              title={title}
-              description={paymentDescription}
-              status={paymentStatus}
-            />
-          </CardContent>
-          <CardFooter className="flex flex-wrap gap-3">
-            {completed ? (
-              <Button onClick={() => window.print()}>
-                <PrinterIcon data-icon="inline-start" />
-                Print receipt
-              </Button>
-            ) : null}
-            {!request ? (
-              <Button disabled={pending || checkingStatus} onClick={sendPrompt} variant="outline">
-                Retry same saved request
-              </Button>
-            ) : null}
-            {finished ? (
-              <Button
-                disabled={pending}
-                variant="outline"
-                onClick={returnToMemberSearch}
+          ) : null}
+          <STKPaymentStatus
+            title={title}
+            description={paymentDescription}
+            status={paymentStatus}
+          />
+        </CardContent>
+        <CardFooter className="flex flex-wrap gap-3">
+          {completed ? (
+            <Button onClick={() => window.print()}>
+              <PrinterIcon data-icon="inline-start" />
+              Print receipt
+            </Button>
+          ) : null}
+          {!request ? (
+            <Button
+              disabled={pending || checkingStatus}
+              onClick={sendPrompt}
+              variant="outline"
+            >
+              Retry same saved request
+            </Button>
+          ) : null}
+          {finished ? (
+            <Button
+              disabled={pending}
+              variant="outline"
+              onClick={returnToMemberSearch}
+            >
+              Finish and return to member search
+            </Button>
+          ) : (
+            <AlertDialog>
+              <AlertDialogTrigger
+                render={<Button disabled={pending} variant="outline" />}
               >
-                Finish and return to member search
-              </Button>
-            ) : (
-              <AlertDialog>
-                <AlertDialogTrigger
-                  render={<Button disabled={pending} variant="outline" />}
-                >
-                  Discard and start over
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>
-                      Discard this saved payment?
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This clears the saved payment from this browser and
-                      returns to member search. The original payment is not
-                      cancelled and may still complete. Check whether money was
-                      deducted before sending another prompt; a new attempt
-                      could charge again.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Keep checking payment</AlertDialogCancel>
-                    <AlertDialogAction
-                      disabled={pending}
-                      onClick={returnToMemberSearch}
-                    >
-                      Discard and start over
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
-          </CardFooter>
+                Discard and start over
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    Discard this saved payment?
+                  </AlertDialogTitle>
+
+                  <AlertDialogDescription>
+                    Are you sure you want to clear this payment? It will return
+                    you to member search, but the payment may still go through.
+                    Check if money was deducted before trying again.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Keep checking payment</AlertDialogCancel>
+                  <AlertDialogAction
+                    disabled={pending}
+                    onClick={returnToMemberSearch}
+                  >
+                    Discard and start over
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </CardFooter>
       </Card>
     );
 
