@@ -2,6 +2,7 @@ import { CurrencyInput } from "@/components/currency-input";
 import { ArrowLeftIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Card,
   CardContent,
@@ -38,6 +39,8 @@ export function CloseTillStep({
   const session = state?.ok ? state.session : undefined;
   const error =
     state?.ok === false ? state.fieldErrors?.countedAmount?.[0] : undefined;
+  const reasonError =
+    state?.ok === false ? state.fieldErrors?.varianceReason?.[0] : undefined;
   return (
     <Card className="mx-auto w-full max-w-2xl">
       <CardHeader>
@@ -84,21 +87,24 @@ export function CloseTillStep({
                 />
                 <FieldError>{error}</FieldError>
               </Field>
-              <Field>
+              <Field data-invalid={Boolean(reasonError)}>
                 <FieldLabel htmlFor="varianceReason">
                   Variance reason
                 </FieldLabel>
                 <Input
+                  aria-invalid={Boolean(reasonError)}
                   disabled={pending}
                   id="varianceReason"
                   maxLength={500}
                   name="varianceReason"
                 />
+                <FieldError>{reasonError}</FieldError>
               </Field>
               {state?.ok === false ? (
-                <p className="text-sm text-destructive" role="alert">
-                  {state.message}
-                </p>
+                <Alert variant="destructive" role="alert">
+                  <AlertTitle>Check the till count</AlertTitle>
+                  <AlertDescription>{state.message}</AlertDescription>
+                </Alert>
               ) : null}
               <Button disabled={pending} type="submit" variant="destructive">
                 {pending ? <Spinner data-icon="inline-start" /> : null}

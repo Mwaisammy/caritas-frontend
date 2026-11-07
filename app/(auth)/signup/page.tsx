@@ -1,9 +1,11 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import SignUpForm from "./signup-form";
 
-const SignUp = async () => {
+// SignUpContent keeps the session lookup and redirect inside Suspense.
+const SignUpContent = async () => {
   const session = await auth.api.getSession({ headers: await headers() });
 
   if (session) {
@@ -26,5 +28,12 @@ const SignUp = async () => {
     </div>
   );
 };
+
+// SignUp streams a placeholder while checking for an existing session.
+const SignUp = () => (
+  <Suspense fallback={<p className="text-sm text-stone-500">Opening registration…</p>}>
+    <SignUpContent />
+  </Suspense>
+);
 
 export default SignUp;
