@@ -1,9 +1,9 @@
-import {connection} from "next/server";
-import {Suspense} from "react";
+import { connection } from "next/server";
+import { Suspense } from "react";
 import MainDashboard from "./dashboard-view";
 import DashboardLoading from "../loading";
-import {goApiPost} from "@/lib/server/go-api";
-import {MEMBER_BRANCH_ID} from "@/app/dashboard/members/config";
+import { goApiPost } from "@/lib/server/go-api";
+import { MEMBER_BRANCH_ID } from "@/app/dashboard/members/config";
 
 // DashboardSummary keeps gateway int64 fields as strings until the page formats them.
 type DashboardSummary = {
@@ -15,14 +15,25 @@ type DashboardSummary = {
   outstandingPrincipal?: string;
   shareCapital?: string;
   collectionsThisMonth?: string;
+  dividendsPaid?: string;
+  monthlyMovements?: {
+    month: string;
+    loanCollections: string;
+    loanDisbursements: string;
+    sharePurchases: string;
+    shareWithdrawals: string;
+  }[];
 };
 
 // DashboardContent waits for request-time metrics after the page fallback has rendered.
 async function DashboardContent() {
   await connection();
-  const summary = await goApiPost<DashboardSummary>("/api/v1/dashboard/summary", {
-    branchId: MEMBER_BRANCH_ID,
-  }).catch(() => null);
+  const summary = await goApiPost<DashboardSummary>(
+    "/api/v1/dashboard/summary",
+    {
+      branchId: MEMBER_BRANCH_ID,
+    },
+  ).catch(() => null);
 
   const counts = summary
     ? {
@@ -37,42 +48,84 @@ async function DashboardContent() {
     : 0;
   const principal = summary?.outstandingPrincipal?.match(/^(\d+)(?:\.(\d+))?$/);
   const roundedPrincipal = principal
-    ? BigInt(principal[1]) + (Number(principal[2]?.[0] ?? 0) >= 5 ? BigInt(1) : BigInt(0))
+    ? BigInt(principal[1]) +
+      (Number(principal[2]?.[0] ?? 0) >= 5 ? BigInt(1) : BigInt(0))
     : null;
   const shareCapital = summary?.shareCapital?.match(/^(\d+)(?:\.(\d+))?$/);
   const roundedShares = shareCapital
-    ? BigInt(shareCapital[1]) + (Number(shareCapital[2]?.[0] ?? 0) >= 5 ? BigInt(1) : BigInt(0))
+    ? BigInt(shareCapital[1]) +
+      (Number(shareCapital[2]?.[0] ?? 0) >= 5 ? BigInt(1) : BigInt(0))
     : null;
-  const collections = summary?.collectionsThisMonth?.match(/^(\d+)(?:\.(\d+))?$/);
+  const collections =
+    summary?.collectionsThisMonth?.match(/^(\d+)(?:\.(\d+))?$/);
   const roundedCollections = collections
-    ? BigInt(collections[1]) + (Number(collections[2]?.[0] ?? 0) >= 5 ? BigInt(1) : BigInt(0))
+    ? BigInt(collections[1]) +
+      (Number(collections[2]?.[0] ?? 0) >= 5 ? BigInt(1) : BigInt(0))
+    : null;
+  const paidDividends = summary?.dividendsPaid?.match(/^(\d+)(?:\.(\d+))?$/);
+  const roundedDividends = paidDividends
+    ? BigInt(paidDividends[1]) +
+      (Number(paidDividends[2]?.[0] ?? 0) >= 5 ? BigInt(1) : BigInt(0))
     : null;
 
   return (
     <MainDashboard
       data={{
-        outstandingLoans: roundedPrincipal === null
-          ? null
-          : `KES ${new Intl.NumberFormat("en-KE").format(roundedPrincipal)}`,
-        shareCapital: roundedShares === null
-          ? null
-          : `KES ${new Intl.NumberFormat("en-KE").format(roundedShares)}`,
-        collectionsThisMonth: roundedCollections === null
-          ? null
-          : `KES ${new Intl.NumberFormat("en-KE").format(roundedCollections)}`,
+        outstandingLoans:
+          roundedPrincipal === null
+            ? null
+            : `KES ${new Intl.NumberFormat("en-KE").format(roundedPrincipal)}`,
+        shareCapital:
+          roundedShares === null
+            ? null
+            : `KES ${new Intl.NumberFormat("en-KE").format(roundedShares)}`,
+        collectionsThisMonth:
+          roundedCollections === null
+            ? null
+            : `KES ${new Intl.NumberFormat("en-KE").format(roundedCollections)}`,
+        dividendsPaid:
+          roundedDividends === null
+            ? null
+            : `KES ${new Intl.NumberFormat("en-KE").format(roundedDividends)}`,
         activeMembers: summary ? Number(summary.activeMembers ?? 0) : null,
-        loanMix: counts && totalLoans > 0
-          ? [
-              {name: "Active", value: Math.round(counts.active / totalLoans * 100), color: "#9e1c2a"},
-              {name: "Pending", value: Math.round(counts.pending / totalLoans * 100), color: "#f1b651"},
-              {name: "Overdue", value: Math.round(counts.delinquent / totalLoans * 100), color: "#ec7a7a"},
-              {name: "Closed", value: Math.round(counts.closed / totalLoans * 100), color: "#e6e2e2"},
-            ]
-          : null,
+        loanMix:
+          counts && totalLoans > 0
+            ? [
+                {
+                  name: "Active",
+                  value: Math.round((counts.active / totalLoans) * 100),
+                  color: "#9e1c2a",
+                },
+                {
+                  name: "Pending",
+                  value: Math.round((counts.pending / totalLoans) * 100),
+                  color: "#f1b651",
+                },
+                {
+                  name: "Overdue",
+                  value: Math.round((counts.delinquent / totalLoans) * 100),
+                  color: "#ec7a7a",
+                },
+                {
+                  name: "Closed",
+                  value: Math.round((counts.closed / totalLoans) * 100),
+                  color: "#e6e2e2",
+                },
+              ]
+            : null,
         pendingApplications: counts?.pending ?? null,
-        delinquentPercent: counts && totalLoans > 0
-          ? Math.round(counts.delinquent / totalLoans * 100)
-          : null,
+        delinquentPercent:
+          counts && totalLoans > 0
+            ? Math.round((counts.delinquent / totalLoans) * 100)
+            : null,
+        monthlyMovements:
+          summary?.monthlyMovements?.map((month) => ({
+            month: month.month,
+            loanCollections: Number(month.loanCollections),
+            loanDisbursements: Number(month.loanDisbursements),
+            sharePurchases: Number(month.sharePurchases),
+            shareWithdrawals: Number(month.shareWithdrawals),
+          })) ?? null,
       }}
     />
   );

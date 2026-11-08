@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import LoginForm from "./login-form";
 
 type LoginPageProps = {
@@ -15,7 +16,8 @@ const safeCallbackUrl = (callbackUrl?: string) => {
   return callbackUrl;
 };
 
-const Login = async ({ searchParams }: LoginPageProps) => {
+// LoginContent keeps request-bound session and callback reads inside Suspense.
+const LoginContent = async ({ searchParams }: LoginPageProps) => {
   const session = await auth.api.getSession({ headers: await headers() });
   const { callbackUrl } = await searchParams;
   const destination = safeCallbackUrl(callbackUrl);
@@ -40,5 +42,12 @@ const Login = async ({ searchParams }: LoginPageProps) => {
     </div>
   );
 };
+
+// Login streams a stable placeholder while the session redirect is resolved.
+const Login = ({ searchParams }: LoginPageProps) => (
+  <Suspense fallback={<p className="text-sm text-stone-500">Opening sign in…</p>}>
+    <LoginContent searchParams={searchParams} />
+  </Suspense>
+);
 
 export default Login;

@@ -580,6 +580,33 @@ export async function closeCashierSessionAction(
       session: result.session,
     };
   } catch (error) {
+    if (
+      error instanceof GoApiError &&
+      error.code === 3 &&
+      error.detail === "cash variance requires a reason"
+    ) {
+      return {
+        ok: false,
+        message: "The counted cash differs from recorded receipts. Recount it, or explain the difference before closing the till.",
+        fieldErrors: { varianceReason: ["Enter a reason if the counted amount is correct."] },
+      };
+    }
+    if (error instanceof GoApiError) {
+      return {
+        ok: false,
+        message: error.status === 401
+          ? "Your session has expired. Sign in again before closing the till."
+          : error.status === 403
+            ? "You do not have permission to close this till."
+            : error.status === 404
+              ? "This till could not be found. Refresh the cash workspace."
+              : error.status === 409 || error.code === 9
+                ? "This till has changed. Refresh it before trying again."
+                : error.status === 400
+                  ? "Check the counted cash and variance reason, then try again."
+                  : "The till could not be closed. Refresh its status before trying again.",
+      };
+    }
     return failure(error);
   }
 }

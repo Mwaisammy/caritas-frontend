@@ -1,9 +1,12 @@
 "use server";
 
-import {z} from "zod";
+import { z } from "zod";
+import { eq } from "drizzle-orm";
 
-import type {StaffUser} from "@/lib/go-api-client";
-import {createStaffUser, GoApiError} from "@/lib/server/go-api";
+import { db } from "@/db";
+import { user } from "@/db/schema";
+import type { StaffUser } from "@/lib/go-api-client";
+import { createStaffUser, goApiPost, GoApiError } from "@/lib/server/go-api";
 
 const createStaffSchema = z.object({
   authUserId: z.string().trim().min(1, "Enter a Better Auth user ID.").max(128),
@@ -12,12 +15,6 @@ const createStaffSchema = z.object({
     .trim()
     .max(20)
     .regex(/^[1-9]\d*$/, "Branch ID must be a positive whole number."),
-  email: z.email("Enter a valid email address.").trim().toLowerCase().max(254),
-  name: z
-    .string()
-    .trim()
-    .min(2, "Name must be at least 2 characters.")
-    .max(120),
   role: z.enum([
     "system_admin",
     "manager",
@@ -57,6 +54,25 @@ function messageForStatus(status: number) {
   }
 }
 
+// deactivateStaffAction uses the existing Go authorization and preserves the staff record.
+export async function deactivateStaffAction(staffUserId: string) {
+  if (!staffUserId) return { ok: false, message: "Choose a staff member." };
+  try {
+    await goApiPost("/api/v1/auth/deactivate-staff-user", { staffUserId });
+    return { ok: true, message: "Staff access deactivated." };
+  } catch (error) {
+    return {
+      ok: false,
+      message:
+        error instanceof GoApiError && error.detail === "you cannot deactivate your own staff access"
+          ? "You cannot deactivate your own staff access."
+          : error instanceof GoApiError && error.status === 403
+            ? "You do not have permission to manage staff access."
+            : "Could not deactivate staff access.",
+    };
+  }
+}
+
 export async function createStaffAction(
   _previousState: CreateStaffState,
   formData: FormData,
@@ -64,8 +80,6 @@ export async function createStaffAction(
   const parsed = createStaffSchema.safeParse({
     authUserId: formData.get("authUserId"),
     branchId: formData.get("branchId"),
-    email: formData.get("email"),
-    name: formData.get("name"),
     role: formData.get("role"),
   });
 
@@ -78,7 +92,19 @@ export async function createStaffAction(
   }
 
   try {
-    const result = await createStaffUser(parsed.data);
+    const [account] = await db
+      .select({ name: user.name, email: user.email })
+      .from(user)
+      .where(eq(user.id, parsed.data.authUserId))
+      .limit(1);
+    if (!account) {
+      return { status: "error", message: "Select an existing account." };
+    }
+    const result = await createStaffUser({
+      ...parsed.data,
+      name: account.name,
+      email: account.email,
+    });
 
     if (!result.staffUser) {
       return {
@@ -87,7 +113,7 @@ export async function createStaffAction(
       };
     }
 
-    return {status: "success", staffUser: result.staffUser};
+    return { status: "success", staffUser: result.staffUser };
   } catch (error) {
     if (error instanceof GoApiError) {
       console.error("Create staff request failed", {
@@ -95,7 +121,7 @@ export async function createStaffAction(
         status: error.status,
       });
 
-      return {status: "error", message: messageForStatus(error.status)};
+      return { status: "error", message: messageForStatus(error.status) };
     }
 
     console.error("Unexpected create staff failure");

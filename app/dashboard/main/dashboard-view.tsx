@@ -10,7 +10,19 @@ import {
   UsersRound,
   Wallet,
 } from "lucide-react";
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 const unavailable = "Unavailable";
 
@@ -19,10 +31,20 @@ type DashboardData = {
   outstandingLoans: string | null;
   shareCapital: string | null;
   collectionsThisMonth: string | null;
+  dividendsPaid: string | null;
   activeMembers: number | null;
   loanMix: { name: string; value: number; color: string }[] | null;
   pendingApplications: number | null;
   delinquentPercent: number | null;
+  monthlyMovements:
+    | {
+        month: string;
+        loanCollections: number;
+        loanDisbursements: number;
+        sharePurchases: number;
+        shareWithdrawals: number;
+      }[]
+    | null;
 };
 
 function SectionLink({
@@ -59,9 +81,10 @@ export default function MainPage({ data }: { data: DashboardData }) {
     {
       label: "Share capital",
       value: data.shareCapital ?? unavailable,
-      context: data.shareCapital === null
-        ? "Share data unavailable"
-        : "Current branch share balance",
+      context:
+        data.shareCapital === null
+          ? "Share data unavailable"
+          : "Current branch share balance",
       icon: PiggyBank,
       tone: "text-amber-700 bg-amber-50",
       href: "/dashboard/shares",
@@ -79,8 +102,11 @@ export default function MainPage({ data }: { data: DashboardData }) {
     },
     {
       label: "Dividends paid",
-      value: unavailable,
-      context: "No branch total available",
+      value: data.dividendsPaid ?? unavailable,
+      context:
+        data.dividendsPaid === null
+          ? "Dividend data unavailable"
+          : "Confirmed cash payouts",
       icon: Wallet,
       tone: "text-emerald-700 bg-emerald-50",
       href: "/dashboard/dividends",
@@ -106,8 +132,12 @@ export default function MainPage({ data }: { data: DashboardData }) {
               <ArrowUpRight className="size-5" />
             </span>
             <div>
-              <p className="text-xs text-rose-100">Completed collections received this month</p>
-              <p className="text-xl font-semibold">{data.collectionsThisMonth ?? unavailable}</p>
+              <p className="text-xs text-rose-100">
+                Completed collections received this month
+              </p>
+              <p className="text-xl font-semibold">
+                {data.collectionsThisMonth ?? unavailable}
+              </p>
             </div>
           </div>
         </div>
@@ -153,16 +183,72 @@ export default function MainPage({ data }: { data: DashboardData }) {
                 Lending cash flow
               </h2>
               <p className="mt-1 text-xs text-slate-500">
-                Collections and disbursements · KES thousands
+                Loan repayments received and disbursements · KES
               </p>
             </div>
             <span className="rounded-lg border border-gray-200 px-3 py-2 text-xs text-slate-600">
               Last 6 months
             </span>
           </div>
-          <div className="mt-6 flex h-72 items-center justify-center text-sm text-slate-500">
-            Collection history is not available yet.
-          </div>
+          {data.monthlyMovements?.some(
+            (month) => month.loanCollections || month.loanDisbursements,
+          ) ? (
+            <div
+              className="mt-6 h-72 w-full"
+              role="img"
+              aria-label="Loan repayments received and disbursements for the last six months"
+            >
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={data.monthlyMovements}
+                  margin={{ left: 0, right: 8 }}
+                >
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="month"
+                    tickFormatter={(month) =>
+                      new Date(`${month}-01T00:00:00Z`).toLocaleDateString(
+                        "en-KE",
+                        { month: "short", year: "2-digit", timeZone: "UTC" },
+                      )
+                    }
+                  />
+                  <YAxis
+                    width={52}
+                    tickFormatter={(value) =>
+                      new Intl.NumberFormat("en-KE", {
+                        notation: "compact",
+                      }).format(Number(value))
+                    }
+                  />
+                  <Tooltip
+                    formatter={(value) =>
+                      `KES ${Number(value).toLocaleString("en-KE")}`
+                    }
+                  />
+                  <Legend />
+                  <Bar
+                    dataKey="loanCollections"
+                    name="Repayments"
+                    fill="var(--primary)"
+                    radius={[4, 4, 0, 0]}
+                  />
+                  <Bar
+                    dataKey="loanDisbursements"
+                    name="Disbursements"
+                    fill="var(--chart-2)"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="mt-6 flex h-72 items-center justify-center text-sm text-slate-500">
+              {data.monthlyMovements
+                ? "No loan cash movement in the last six months."
+                : "Lending history is unavailable."}
+            </div>
+          )}
         </section>
 
         <section
@@ -251,14 +337,70 @@ export default function MainPage({ data }: { data: DashboardData }) {
                 Share movement
               </h2>
               <p className="mt-1 text-xs text-slate-500">
-                Shares purchased and redeemed each month
+                Shares purchased and withdrawn each month · KES
               </p>
             </div>
             <SectionLink href="/dashboard/shares">View shares</SectionLink>
           </div>
-          <div className="mt-6 flex h-64 items-center justify-center text-sm text-slate-500">
-            Share totals and transaction history are not available yet.
-          </div>
+          {data.monthlyMovements?.some(
+            (month) => month.sharePurchases || month.shareWithdrawals,
+          ) ? (
+            <div
+              className="mt-6 h-64 w-full"
+              role="img"
+              aria-label="Share purchases and withdrawals for the last six months"
+            >
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={data.monthlyMovements}
+                  margin={{ left: 0, right: 8 }}
+                >
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="month"
+                    tickFormatter={(month) =>
+                      new Date(`${month}-01T00:00:00Z`).toLocaleDateString(
+                        "en-KE",
+                        { month: "short", year: "2-digit", timeZone: "UTC" },
+                      )
+                    }
+                  />
+                  <YAxis
+                    width={52}
+                    tickFormatter={(value) =>
+                      new Intl.NumberFormat("en-KE", {
+                        notation: "compact",
+                      }).format(Number(value))
+                    }
+                  />
+                  <Tooltip
+                    formatter={(value) =>
+                      `KES ${Number(value).toLocaleString("en-KE")}`
+                    }
+                  />
+                  <Legend />
+                  <Bar
+                    dataKey="sharePurchases"
+                    name="Purchased"
+                    fill="var(--primary)"
+                    radius={[4, 4, 0, 0]}
+                  />
+                  <Bar
+                    dataKey="shareWithdrawals"
+                    name="Withdrawn"
+                    fill="var(--chart-2)"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="mt-6 flex h-64 items-center justify-center text-sm text-slate-500">
+              {data.monthlyMovements
+                ? "No share movement in the last six months."
+                : "Share history is unavailable."}
+            </div>
+          )}
         </section>
 
         <section

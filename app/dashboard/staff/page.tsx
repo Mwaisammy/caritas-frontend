@@ -1,27 +1,29 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import StaffTestCard from "../staff-test-card";
 
-// StaffConsolePage keeps staff provisioning on its own route within the authenticated dashboard.
-export default async function StaffConsolePage() {
+// StaffContent resolves the signed-in identity inside the streaming boundary.
+async function StaffContent() {
   const session = await auth.api.getSession({ headers: await headers() });
+  return <StaffTestCard currentAuthUserId={session?.user.id ?? ""} />;
+}
 
+// StaffConsolePage provides a stable shell while the session lookup completes.
+export default function StaffConsolePage() {
   return (
-    <div className="mx-auto w-full max-w-6xl px-5 pb-12 sm:px-8">
-      <div className="mb-8 max-w-2xl">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#9c2c40]">
-          Administration
-        </p>
-        <h2 className="text-3xl font-semibold tracking-tight text-stone-950 sm:text-4xl">
-          Staff access console
-        </h2>
-        <p className="mt-3 text-sm leading-6 text-stone-600 sm:text-base">
-          Link an existing Better Auth identity to a Caritas staff role. The Go
-          backend makes the final authorization decision.
-        </p>
-      </div>
-
-      <StaffTestCard currentUser={session?.user ?? null} />
+    <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-8 sm:py-10">
+      <Suspense
+        fallback={
+          <div className="flex flex-col gap-4" aria-label="Loading staff access">
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-72 w-full" />
+          </div>
+        }
+      >
+        <StaffContent />
+      </Suspense>
     </div>
   );
 }
