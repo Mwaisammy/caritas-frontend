@@ -25,4 +25,16 @@ Keep functions focused and readable. Prefer straightforward code over abstractio
 - For Anime.js work in HyperFrames compositions, run `npx skills use "https://github.com/heygen-com/hyperframes" --skill "animejs"` and follow the generated skill instructions. Read its complete output, redirecting it to a temporary file first if necessary. Resolve relative paths from the supporting-files directory it provides.
 - Always refer the domain spec of each backend route from "caritas-backend/docs/design" before buiding any ui
 
+### Component Organization
+
+- Always split pages into small, maintainable components.
+- Create a dedicated folder for each page's components.
+- Keep page files clean and focused on page composition.
+- Avoid cramming UI, logic, and multiple sections into one file.
+- Reuse existing components where possible.
+- Avoid unnecessary abstraction or over-engineering.
+- Always use TypeScript with properly typed props.
+
+### Goal: Clean, modular, reusable, and easy-to-maintain code.
+
 <!-- END:nextjs-agent-rules -->
