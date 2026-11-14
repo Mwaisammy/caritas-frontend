@@ -2,6 +2,7 @@
 
 import {revalidatePath, updateTag} from "next/cache";
 import {headers} from "next/headers";
+import {redirect} from "next/navigation";
 import {z} from "zod";
 
 import {auth} from "@/lib/auth";
@@ -46,6 +47,7 @@ export async function applyForLoanAction(_state: LoanActionState, formData: Form
   if (guarantors.some((item) => item.guarantorId && !z.uuid().safeParse(item.guarantorId).success)) return {ok: false, message: "Select each guarantor from the member search results."};
   if (guarantors.some((item) => item.guaranteedAmount && !/^\d+(\.\d{1,2})?$/.test(item.guaranteedAmount))) return {ok: false, message: "Enter a valid guaranteed amount for every guarantor."};
   const officerId = await currentUserId(); if (!officerId) return {ok: false, message: "Your session has expired."};
+  let loanId: string;
   try {
     const {loan} = await getLoan({memberId: parsed.data.memberId});
     if (!loan) return {ok: false, message: "Could not verify this member's existing loan. Please try again."};
@@ -60,7 +62,8 @@ export async function applyForLoanAction(_state: LoanActionState, formData: Form
     const [wholeRate, fractionRate = ""] = parsed.data.interestRate.split(".");
     const scaledRate = BigInt(wholeRate) * BigInt(100) + BigInt(fractionRate.padEnd(2, "0"));
     const interestRate = `${scaledRate / BigInt(10_000)}.${(scaledRate % BigInt(10_000)).toString().padStart(4, "0")}`;
-    const result = await applyForLoan({memberId: parsed.data.memberId, branchId: LOAN_BRANCH_ID, principal: parsed.data.principal, interestRate, repaymentPeriodMonths: parsed.data.repaymentPeriodMonths, officerId, guarantors: guarantors.filter((item) => item.guarantorId), applicantSharePledgeAmount: moneyFrom(parsed.data.sharePledge)}); updateTag("loan-directory"); revalidatePath("/dashboard/loans"); return {ok: true, message: "Loan application submitted.", loanId: result.loanId}; } catch (error) { return failure(error); }
+    const result = await applyForLoan({memberId: parsed.data.memberId, branchId: LOAN_BRANCH_ID, principal: parsed.data.principal, interestRate, repaymentPeriodMonths: parsed.data.repaymentPeriodMonths, officerId, guarantors: guarantors.filter((item) => item.guarantorId), applicantSharePledgeAmount: moneyFrom(parsed.data.sharePledge)}); loanId = result.loanId; updateTag("loan-directory"); revalidatePath("/dashboard/loans"); } catch (error) { return failure(error); }
+  redirect(`/dashboard/loans/${encodeURIComponent(loanId)}/progress`);
 }
 
 // approveLoanAction records the authenticated approver and refreshes the workspace.

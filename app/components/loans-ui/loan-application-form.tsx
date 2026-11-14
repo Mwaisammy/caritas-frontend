@@ -21,6 +21,8 @@ import {formatLoanMoney, loanMoneyUnits, shareMoneyDecimal} from "./loan-badges"
 // LoanApplicationForm keeps terms and proposed security visible together for review.
 export function LoanApplicationForm({member}: {member: Member}) {
   const [state, action, pending] = useActionState(applyForLoanAction, null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const [reviewing, setReviewing] = useState(false);
   const [guarantors, setGuarantors] = useState(1);
   const [terms, setTerms] = useState({principal: "", interestRate: "", repaymentPeriodMonths: "", sharePledge: ""});
   const [security, setSecurity] = useState<Awaited<ReturnType<typeof getMemberShareSecurityAction>> | null>(null);
@@ -77,7 +79,22 @@ export function LoanApplicationForm({member}: {member: Member}) {
   }, [principalError, pledgeError, security]);
 
   return (
-    <form action={action} className="flex flex-col gap-6">
+    <form action={action} className="flex flex-col gap-6" ref={formRef}>
+      <nav aria-label="Application progress" className="rounded-xl bg-card p-4 ring-1 ring-foreground/10 sm:p-5">
+        <ol className="grid grid-cols-3">
+          {["Application", "Review", "Sent"].map((label, index) => {
+            const current = reviewing ? 1 : 0;
+            const complete = index < current;
+            const active = index === current;
+            return <li aria-current={active ? "step" : undefined} className="relative flex flex-col items-center gap-2 text-center" key={label}>
+              {index > 0 ? <span aria-hidden="true" className={`absolute left-[-50%] right-[calc(50%+1rem)] top-4 h-0.5 ${index <= current ? "bg-rose-800" : "bg-muted"}`} /> : null}
+              <span className={`relative z-10 flex size-8 items-center justify-center rounded-full text-sm ring-4 ring-card ${complete || active ? "bg-rose-800 text-white" : "bg-muted text-muted-foreground"}`}>{complete ? "✓" : index + 1}</span>
+              <span className={`text-xs ${active ? "font-semibold text-rose-800" : "text-muted-foreground"}`}>{label}</span>
+            </li>;
+          })}
+        </ol>
+      </nav>
+      <div className={reviewing ? "hidden" : "flex flex-col gap-6"}>
       <Card>
         <CardHeader>
           <CardTitle>Applicant shares</CardTitle>
@@ -186,8 +203,26 @@ export function LoanApplicationForm({member}: {member: Member}) {
       <LoanFeedback state={state} />
       <div className="flex justify-between gap-3">
         <Button variant="outline" render={<Link href="/dashboard/loans" />}><ArrowLeft data-icon="inline-start" />Cancel</Button>
-        <Button type="submit" disabled={pending || !security?.ok || Boolean(principalError || pledgeError)}>{pending ? <LoaderCircle className="animate-spin" data-icon="inline-start" /> : <Send data-icon="inline-start" />}Submit application</Button>
+        <Button type="button" disabled={pending || !security?.ok || Boolean(principalError || pledgeError)} onClick={() => { if (formRef.current?.reportValidity()) setReviewing(true); }}>Review application</Button>
       </div>
+      </div>
+      {reviewing ? <Card>
+        <CardHeader><CardTitle>Check the details</CardTitle><CardDescription>Make sure everything looks right before sending.</CardDescription></CardHeader>
+        <CardContent>
+          <dl className="grid gap-3 text-sm sm:grid-cols-2">
+            <div><dt className="text-muted-foreground">Member</dt><dd className="font-medium">{member.profile?.personal?.fullName || "Unnamed member"}</dd></div>
+            <div><dt className="text-muted-foreground">Amount</dt><dd className="font-medium">{terms.principal ? formatLoanMoney(terms.principal) : "—"}</dd></div>
+            <div><dt className="text-muted-foreground">Interest</dt><dd className="font-medium">{terms.interestRate || "—"}% per month</dd></div>
+            <div><dt className="text-muted-foreground">Repayment period</dt><dd className="font-medium">{terms.repaymentPeriodMonths || "—"} months</dd></div>
+            <div><dt className="text-muted-foreground">Applicant share pledge</dt><dd className="font-medium">{terms.sharePledge ? formatLoanMoney(terms.sharePledge) : "—"}</dd></div>
+            <div><dt className="text-muted-foreground">Proposed guarantors</dt><dd className="font-medium">{Object.values(proposals).filter((proposal) => proposal.memberId).length}</dd></div>
+          </dl>
+        </CardContent>
+        <CardFooter className="justify-between gap-3">
+          <Button type="button" variant="outline" onClick={() => setReviewing(false)}>Go back and edit</Button>
+          <Button type="submit" disabled={pending}>{pending ? <LoaderCircle className="animate-spin" data-icon="inline-start" /> : <Send data-icon="inline-start" />}Send application</Button>
+        </CardFooter>
+      </Card> : null}
     </form>
   );
 }
