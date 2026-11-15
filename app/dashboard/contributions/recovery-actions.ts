@@ -27,7 +27,7 @@ export async function recoverDarajaAction(data: FormData) {
   const parsed = z
     .object({
       paymentRequestId: z.uuid(),
-      action: z.enum(["query", "retry_posting", "reconcile"]),
+      action: z.enum(["query", "restore_checkout", "retry_posting", "reconcile"]),
       checkoutRequestId: z.string().trim().optional(),
       mpesaReference: z.string().trim().optional(),
       amount: z
@@ -56,6 +56,8 @@ export async function recoverDarajaAction(data: FormData) {
       message:
         "Enter the verified M-Pesa reference, amount, payment time, business record evidence and reason.",
     };
+  if (input.action === "restore_checkout" && (!input.checkoutRequestId || !input.reason))
+    return { ok: false as const, message: "Enter the verified checkout ID and why it is being restored." };
   try {
     await recoverDarajaPayment({
       ...input,
@@ -74,6 +76,8 @@ export async function recoverDarajaAction(data: FormData) {
       ok: true as const,
       message: input.action === "query"
         ? "Status check scheduled for this checkout. Refresh shortly. No new prompt was sent."
+        : input.action === "restore_checkout"
+          ? "Checkout restored. Status recovery is scheduled; no new prompt was sent."
         : input.action === "retry_posting"
           ? "Posting retry scheduled for the existing receipt. Refresh to see progress."
           : "Verified payment saved. Refresh to see receipt processing. No new prompt was sent.",

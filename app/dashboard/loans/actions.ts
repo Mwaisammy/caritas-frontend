@@ -23,7 +23,7 @@ function moneyFrom(value: string): ShareMoney { const [units, fraction = ""] = v
 function failure(error: unknown): LoanActionState {
   if (error instanceof GoApiError) {
     const message = error.status === 401 ? "Your session has expired. Sign in again."
-      : error.status === 403 ? "Your staff role does not have permission for this action."
+      : error.status === 403 ? error.detail ?? "Your staff role does not have permission for this action."
       : error.detail?.replace(/^exec tx: /, "")
         ?? (error.status === 504 ? "The request timed out. Reload to check its status before retrying."
           : "The loan service could not complete the request. Please try again.");

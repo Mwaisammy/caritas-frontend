@@ -10,6 +10,8 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import {Skeleton} from "@/components/ui/skeleton";
 import {RouteLoadingStripe} from "../components/route-loading-stripe";
 import { LoadingMessage } from "../components/loading-message";
+import { goApiGet, GoApiError } from "@/lib/server/go-api";
+import AccessDenied from "./access-denied";
 
 // DashboardShellFallback provides a stable first frame while authentication resolves.
 function DashboardShellFallback() {
@@ -42,10 +44,23 @@ async function AuthenticatedDashboard({children}: {children: React.ReactNode}) {
   if (!session) {
     redirect("/login?callbackUrl=/dashboard");
   }
+  let staff: { permissions: string[] };
+  try {
+    staff = await goApiGet("/api/v1/auth/current-staff") as { permissions: string[] };
+  } catch (error) {
+    if (error instanceof GoApiError && error.status === 401) return <AccessDenied />;
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center gap-4 p-6 text-center">
+        <h1 className="text-2xl font-semibold">Staff service unavailable</h1>
+        <p>We could not check your staff access. Please try again.</p>
+        <a className="text-[#7d1d2d] underline" href="/dashboard">Try again</a>
+      </main>
+    );
+  }
 
   return (
     <SidebarProvider>
-      <AppSidebar user={session.user} />
+      <AppSidebar user={session.user} permissions={staff.permissions ?? []} />
 
       <main className="flex min-h-screen min-w-0 flex-1 flex-col">
         <Header user={session.user} />

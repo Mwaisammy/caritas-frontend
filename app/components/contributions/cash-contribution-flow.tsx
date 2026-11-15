@@ -103,7 +103,9 @@ export function CashContributionFlow() {
   // Commit the found member with the entry screen; action state can still contain the previous member.
   const findAction = (data: FormData) =>
     startFinding(async () => {
+      const started = performance.now();
       const result = await findCashMemberAction(null, data);
+      console.info("Cash member search", { durationMs: Math.round(performance.now() - started), found: result?.ok === true });
       startFinding(() => {
         setMemberState(result);
         if (result?.ok) {
@@ -115,7 +117,10 @@ export function CashContributionFlow() {
       });
     });
   const [openState, openAction, opening] = useActionState(async () => {
+    const started = performance.now();
     const result = await openCashierSessionAction();
+    if (performance.now() - started > 1000)
+      console.info("Open cashier till", { durationMs: Math.round(performance.now() - started) });
     if (result?.ok && result.session) {
       setSession(result.session);
       setStep("member");
@@ -356,6 +361,7 @@ export function CashContributionFlow() {
           {step === "member" && session?.status === "open" ? (
             <MemberLookupStep
               action={findAction}
+              branchId={context.branchId}
               onCloseTill={() => setStep("close")}
               pending={finding}
               state={memberState?.ok ? null : memberState}

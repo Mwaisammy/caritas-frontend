@@ -75,7 +75,7 @@ export async function goApiPost<T>(
       body: JSON.stringify(body),
       // STK initiation allows 45s for Daraja and 15s to persist its checkout ID.
       // Disbursement rechecks collateral and writes up to 36 schedule rows before committing.
-      // Cash acceptance can take 8s, then synchronous allocation processing up to 30s.
+      // Cash acceptance has a 30s backend limit; leave time for its response.
       signal: AbortSignal.timeout(
         path === "/api/v1/contributions/initiate-daraja-stk" ? 75_000
           : path === "/api/v1/loans/disburse" ? 60_000
@@ -96,9 +96,9 @@ export async function goApiPost<T>(
         ? (body as { code?: unknown; message?: unknown })
         : undefined;
     const code = typeof error?.code === "number" ? error.code : undefined;
-    // Only domain validation messages are exposed; removing this guard can leak internal server details.
+    // Only validation and authorization messages are exposed; removing this guard can leak internal server details.
     const detail =
-      [3, 5, 6, 9].includes(code ?? 0) && typeof error?.message === "string"
+      [3, 5, 6, 7, 9].includes(code ?? 0) && typeof error?.message === "string"
         ? error.message
         : undefined;
     throw new GoApiError(

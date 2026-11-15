@@ -202,10 +202,15 @@ export default function MainPage({ data }: { data: DashboardData }) {
                 <BarChart
                   data={data.monthlyMovements}
                   margin={{ left: 0, right: 8 }}
+                  barGap={6}
                 >
-                  <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                  <CartesianGrid vertical={false} stroke="#eee8e7" />
                   <XAxis
                     dataKey="month"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: "#78716c", fontSize: 12 }}
+                    tickMargin={12}
                     tickFormatter={(month) =>
                       new Date(`${month}-01T00:00:00Z`).toLocaleDateString(
                         "en-KE",
@@ -215,6 +220,9 @@ export default function MainPage({ data }: { data: DashboardData }) {
                   />
                   <YAxis
                     width={52}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: "#78716c", fontSize: 12 }}
                     tickFormatter={(value) =>
                       new Intl.NumberFormat("en-KE", {
                         notation: "compact",
@@ -222,22 +230,24 @@ export default function MainPage({ data }: { data: DashboardData }) {
                     }
                   />
                   <Tooltip
+                    cursor={{ fill: "#f9f1f0" }}
+                    contentStyle={{ border: "1px solid #eee8e7", borderRadius: 12, boxShadow: "0 8px 24px #1c19170d" }}
                     formatter={(value) =>
                       `KES ${Number(value).toLocaleString("en-KE")}`
                     }
                   />
-                  <Legend />
+                  <Legend iconType="circle" iconSize={8} wrapperStyle={{ paddingTop: 16 }} />
                   <Bar
                     dataKey="loanCollections"
                     name="Repayments"
-                    fill="var(--primary)"
-                    radius={[4, 4, 0, 0]}
+                    fill="#8f2638"
+                    radius={[6, 6, 0, 0]}
                   />
                   <Bar
                     dataKey="loanDisbursements"
                     name="Disbursements"
-                    fill="var(--chart-2)"
-                    radius={[4, 4, 0, 0]}
+                    fill="#d9aa68"
+                    radius={[6, 6, 0, 0]}
                   />
                 </BarChart>
               </ResponsiveContainer>
@@ -282,13 +292,17 @@ export default function MainPage({ data }: { data: DashboardData }) {
                       innerRadius={62}
                       outerRadius={88}
                       paddingAngle={3}
+                      cornerRadius={5}
                       stroke="none"
                     >
                       {data.loanMix.map((item) => (
                         <Cell key={item.name} fill={item.color} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value) => `${value}%`} />
+                    <Tooltip
+                      contentStyle={{ border: "1px solid #eee8e7", borderRadius: 12, boxShadow: "0 8px 24px #1c19170d" }}
+                      formatter={(value) => `${value}%`}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
@@ -354,10 +368,15 @@ export default function MainPage({ data }: { data: DashboardData }) {
                 <BarChart
                   data={data.monthlyMovements}
                   margin={{ left: 0, right: 8 }}
+                  barGap={6}
                 >
-                  <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                  <CartesianGrid vertical={false} stroke="#eee8e7" />
                   <XAxis
                     dataKey="month"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: "#78716c", fontSize: 12 }}
+                    tickMargin={12}
                     tickFormatter={(month) =>
                       new Date(`${month}-01T00:00:00Z`).toLocaleDateString(
                         "en-KE",
@@ -367,6 +386,9 @@ export default function MainPage({ data }: { data: DashboardData }) {
                   />
                   <YAxis
                     width={52}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: "#78716c", fontSize: 12 }}
                     tickFormatter={(value) =>
                       new Intl.NumberFormat("en-KE", {
                         notation: "compact",
@@ -374,22 +396,24 @@ export default function MainPage({ data }: { data: DashboardData }) {
                     }
                   />
                   <Tooltip
+                    cursor={{ fill: "#f9f1f0" }}
+                    contentStyle={{ border: "1px solid #eee8e7", borderRadius: 12, boxShadow: "0 8px 24px #1c19170d" }}
                     formatter={(value) =>
                       `KES ${Number(value).toLocaleString("en-KE")}`
                     }
                   />
-                  <Legend />
+                  <Legend iconType="circle" iconSize={8} wrapperStyle={{ paddingTop: 16 }} />
                   <Bar
                     dataKey="sharePurchases"
                     name="Purchased"
-                    fill="var(--primary)"
-                    radius={[4, 4, 0, 0]}
+                    fill="#8f2638"
+                    radius={[6, 6, 0, 0]}
                   />
                   <Bar
                     dataKey="shareWithdrawals"
                     name="Withdrawn"
-                    fill="var(--chart-2)"
-                    radius={[4, 4, 0, 0]}
+                    fill="#d9aa68"
+                    radius={[6, 6, 0, 0]}
                   />
                 </BarChart>
               </ResponsiveContainer>

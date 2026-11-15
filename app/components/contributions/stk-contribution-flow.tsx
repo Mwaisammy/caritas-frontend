@@ -249,7 +249,9 @@ export function STKContributionFlow({
 
   const [memberState, findAction, finding] = useActionState(
     async (previous: CashMemberState, data: FormData) => {
+      const started = performance.now();
       const result = await findCashMemberAction(previous, data);
+      console.info("M-Pesa member search", { durationMs: Math.round(performance.now() - started), found: result?.ok === true });
       if (result?.ok) {
         setAmounts(emptyAmounts(result.loans));
         setPhone(result.member.profile?.personal?.phone ?? "");
@@ -750,6 +752,7 @@ export function STKContributionFlow({
       )}
       <MemberLookupStep
         action={findAction}
+        branchId={context.branchId}
         pending={finding}
         state={memberState}
       />

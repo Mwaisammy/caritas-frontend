@@ -36,41 +36,49 @@ const mainMenu = [
     title: "Dashboard",
     href: "/dashboard/main",
     icon: HomeIcon,
+    permission: "dashboard.read",
   },
   {
     title: "Members",
     href: "/dashboard/members",
     icon: Users,
+    permission: "member.read",
   },
   {
     title: "Cash Contributions",
     href: "/dashboard/contributions",
     icon: Banknote,
+    permission: "cash.read",
   },
   {
     title: "Shares",
     href: "/dashboard/shares",
     icon: PiggyBank,
+    permission: "share.read",
   },
   {
     title: "Loans",
     href: "/dashboard/loans",
     icon: HandCoins,
+    permission: "loan.read",
   },
   {
     title: "Dividends",
     href: "/dashboard/dividends",
     icon: Wallet,
+    permission: "dividend.read",
   },
   {
     title: "Staff Console",
     href: "/dashboard/staff",
     icon: ShieldCheck,
+    permission: "staff.manage",
   },
   {
     title: "Ceep",
     href: "/dashboard/ceep",
     icon: ShieldUser,
+    permission: "ceep.read",
   },
 ];
 
@@ -79,15 +87,18 @@ const reports = [
     title: "Analytics",
     href: "/dashboard/analytics",
     icon: BarChart3,
+    permission: "dashboard.read",
   },
   {
     title: "Reports",
     href: "/dashboard/reports",
     icon: FileText,
+    permission: "dashboard.read",
   },
 ];
 
 type AppSidebarProps = {
+  permissions: string[];
   user: {
     email: string;
     name: string;
@@ -102,7 +113,7 @@ const initialsFor = (name: string) =>
     .map((part) => part[0]?.toUpperCase())
     .join("") || "CA";
 
-export default function AppSidebar({user}: AppSidebarProps) {
+export default function AppSidebar({user, permissions}: AppSidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -128,7 +139,7 @@ export default function AppSidebar({user}: AppSidebarProps) {
 
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainMenu.map((item) => {
+              {mainMenu.filter((item) => permissions.includes(item.permission)).map((item) => {
                 const active =
                   pathname === item.href ||
                   pathname.startsWith(item.href + "/");
@@ -162,7 +173,7 @@ export default function AppSidebar({user}: AppSidebarProps) {
 
           <SidebarGroupContent>
             <SidebarMenu>
-              {reports.map((item) => {
+              {reports.filter((item) => permissions.includes(item.permission)).map((item) => {
                 const active =
                   pathname === item.href ||
                   pathname.startsWith(item.href + "/");

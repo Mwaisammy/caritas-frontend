@@ -1,5 +1,6 @@
 "use client";
 import { CurrencyInput } from "@/components/currency-input";
+import type { RepaymentSchedule } from "@/lib/go-api-client";
 import { ChargeAssessment } from "./charge-assessment";
 import { useState, useEffect, useTransition } from "react";
 import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
@@ -26,6 +27,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import {
+  loadCashSchedulesAction,
   loadCashObligationsAction,
   type CashMemberState,
 } from "@/app/dashboard/contributions/actions";
@@ -117,6 +119,7 @@ export function ContributionEntryStep({
   const [loading, startLoading] = useTransition();
   const [loadedPeriod, setLoadedPeriod] = useState("");
   const [entryError, setEntryError] = useState("");
+  const [schedules, setSchedules] = useState<{ [loanId: string]: RepaymentSchedule[] }>({});
   useEffect(() => {
     let active = true;
     startLoading(async () => {
@@ -133,6 +136,14 @@ export function ContributionEntryStep({
       active = false;
     };
   }, [memberState.member.id, period]);
+  useEffect(() => {
+    let active = true;
+    const ids = memberState.loans.map(({ loan }) => loan.id);
+    if (ids.length) loadCashSchedulesAction(ids).then((result) => {
+      if (active) setSchedules(result);
+    });
+    return () => { active = false; };
+  }, [memberState.loans]);
   const ready = obligations?.ok && loadedPeriod === period && !loading;
   const charges = obligations?.ok ? obligations.charges : [];
   const fees = obligations?.ok
@@ -220,7 +231,7 @@ export function ContributionEntryStep({
               const position = ready
                 ? obligations.loans.find((item) => item.loanId === loan.id)
                 : undefined;
-              const installment = schedule.find((item) =>
+              const installment = (schedules[loan.id] ?? schedule).find((item) =>
                 item.dueDate.startsWith(period),
               );
               return (

@@ -3,6 +3,15 @@
 import { useEffect, useState, useTransition } from "react";
 import { Search, ShieldCheck, UserPlus, Users, X } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -74,6 +83,7 @@ export default function StaffTestCard({ currentAuthUserId }: { currentAuthUserId
   const [roleFilter, setRoleFilter] = useState("");
   const [nextPageToken, setNextPageToken] = useState("");
   const [loading, setLoading] = useState(true);
+  const [canManageStaff, setCanManageStaff] = useState<boolean | null>(null);
   const [loadError, setLoadError] = useState("");
   const [refresh, setRefresh] = useState(0);
   const [open, setOpen] = useState(false);
@@ -85,6 +95,7 @@ export default function StaffTestCard({ currentAuthUserId }: { currentAuthUserId
   const [branchId, setBranchId] = useState("1");
   const [role, setRole] = useState<StaffRole>("cashier");
   const [deactivating, setDeactivating] = useState<StaffUser | null>(null);
+  const [deactivationError, setDeactivationError] = useState("");
   const [isDeactivating, startDeactivation] = useTransition();
   const [notice, setNotice] = useState("");
   const [state, setState] = useState<CreateStaffState>({ status: "idle" });
@@ -105,10 +116,17 @@ export default function StaffTestCard({ currentAuthUserId }: { currentAuthUserId
             signal: controller.signal,
           });
           const data = await response.json();
+          if (response.status === 401 || response.status === 403) {
+            setCanManageStaff(false);
+            setStaff([]);
+            setNextPageToken("");
+            setOpen(false);
+          }
           if (!response.ok)
             throw new Error(
               data.message ?? "Staff records could not be loaded.",
             );
+          setCanManageStaff(true);
           setStaff((data as StaffPage).staffUsers ?? []);
           setBranchIds((current) => Array.from(new Set([...current, ...((data as StaffPage).staffUsers ?? []).map((person) => person.branchId)])));
           setNextPageToken((data as StaffPage).nextPageToken ?? "");
@@ -133,7 +151,7 @@ export default function StaffTestCard({ currentAuthUserId }: { currentAuthUserId
 
   // Searches Better Auth after two characters while the grant dialog is open.
   useEffect(() => {
-    if (!open || selected || accountQuery.trim().length < 2) return;
+    if (!canManageStaff || !open || selected || accountQuery.trim().length < 2) return;
     const controller = new AbortController();
     const timer = setTimeout(async () => {
       setAccountLoading(true);
@@ -162,7 +180,7 @@ export default function StaffTestCard({ currentAuthUserId }: { currentAuthUserId
       clearTimeout(timer);
       controller.abort();
     };
-  }, [accountQuery, open, selected]);
+  }, [accountQuery, canManageStaff, open, selected]);
 
   // submit grants access and refreshes the directory only after Go confirms creation.
   async function submit(formData: FormData) {
@@ -185,7 +203,7 @@ export default function StaffTestCard({ currentAuthUserId }: { currentAuthUserId
 
   // loadMore appends one cursor page while preserving the current filters.
   async function loadMore() {
-    if (!nextPageToken) return;
+    if (!canManageStaff || !nextPageToken) return;
     try {
       const params = new URLSearchParams({ page_token: nextPageToken });
       if (query.trim()) params.set("query", query.trim());
@@ -223,7 +241,7 @@ export default function StaffTestCard({ currentAuthUserId }: { currentAuthUserId
             Manage who can access Caritas and the role assigned to each person.
           </p>
         </div>
-        {!loading && !loadError && (
+        {canManageStaff && !loading && !loadError && (
           <Button onClick={() => setOpen(true)}>
             <UserPlus data-icon="inline-start" /> Add staff
           </Button>
@@ -239,7 +257,9 @@ export default function StaffTestCard({ currentAuthUserId }: { currentAuthUserId
         <CardHeader>
           <CardTitle>Team directory</CardTitle>
           <CardDescription>
-            Search staff records and review their access.
+            {canManageStaff === false
+              ? "Only system administrators can search and manage staff accounts."
+              : "Search staff records and review their access."}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
@@ -254,6 +274,7 @@ export default function StaffTestCard({ currentAuthUserId }: { currentAuthUserId
                 className="pl-9"
                 placeholder="Search by name or email"
                 value={query}
+                disabled={!canManageStaff}
                 onChange={(event) => setQuery(event.target.value)}
               />
             </div>
@@ -261,6 +282,7 @@ export default function StaffTestCard({ currentAuthUserId }: { currentAuthUserId
               aria-label="Filter by role"
               className="h-9 rounded-md border border-input bg-background px-3 text-sm sm:w-48"
               value={roleFilter}
+              disabled={!canManageStaff}
               onChange={(event) => setRoleFilter(event.target.value)}
             >
               <option value="">All roles</option>
@@ -273,7 +295,7 @@ export default function StaffTestCard({ currentAuthUserId }: { currentAuthUserId
           </div>
           {loadError ? (
             <Alert variant="destructive">
-              <AlertTitle>Directory unavailable</AlertTitle>
+              <AlertTitle>{canManageStaff === false ? "Staff access restricted" : "Directory unavailable"}</AlertTitle>
               <AlertDescription>{loadError}</AlertDescription>
             </Alert>
           ) : loading ? (
@@ -335,7 +357,7 @@ export default function StaffTestCard({ currentAuthUserId }: { currentAuthUserId
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => setDeactivating(person)}
+                              onClick={() => { setDeactivationError(""); setDeactivating(person); }}
                             >
                               Deactivate
                             </Button>
@@ -376,7 +398,7 @@ export default function StaffTestCard({ currentAuthUserId }: { currentAuthUserId
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => setDeactivating(person)}
+                          onClick={() => { setDeactivationError(""); setDeactivating(person); }}
                         >
                           Deactivate
                         </Button>
@@ -564,44 +586,60 @@ export default function StaffTestCard({ currentAuthUserId }: { currentAuthUserId
           </form>
         </DialogContent>
       </Dialog>
-      <Dialog
+      <AlertDialog
         open={Boolean(deactivating)}
         onOpenChange={(value) => {
-          if (!value) setDeactivating(null);
+          if (!value && !isDeactivating) setDeactivating(null);
         }}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Deactivate staff access?</DialogTitle>
-            <DialogDescription>
-              {deactivating?.name} will no longer be able to use their Caritas
-              staff role. Their staff record will be kept.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeactivating(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Deactivate staff access?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove {deactivating?.name}&apos;s staff access. Their staff record and history will be kept.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {deactivating ? (
+            <div className="rounded-lg border bg-muted/40 p-4 text-sm">
+              <p className="font-semibold">{deactivating.name}</p>
+              <p className="text-muted-foreground">{deactivating.email}</p>
+              <p className="mt-2 text-muted-foreground">
+                {roles.find((item) => item.value === deactivating.role)?.label ?? deactivating.role} · Branch {deactivating.branchId}
+              </p>
+            </div>
+          ) : null}
+          {deactivationError ? (
+            <Alert variant="destructive">
+              <AlertTitle>Access was not changed</AlertTitle>
+              <AlertDescription>{deactivationError}</AlertDescription>
+            </Alert>
+          ) : null}
+          <AlertDialogFooter>
+            <Button variant="outline" disabled={isDeactivating} onClick={() => setDeactivating(null)}>
               Cancel
             </Button>
-            <Button
+            <AlertDialogAction
               variant="destructive"
               disabled={isDeactivating}
               onClick={() => {
                 if (!deactivating) return;
                 startDeactivation(async () => {
                   const result = await deactivateStaffAction(deactivating.id);
-                  setNotice(result.message);
                   if (result.ok) {
+                    setNotice(result.message);
                     setDeactivating(null);
                     setRefresh((value) => value + 1);
+                  } else {
+                    setDeactivationError(result.message);
                   }
                 });
               }}
             >
-              {isDeactivating && <Spinner data-icon="inline-start" />}Deactivate
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              {isDeactivating && <Spinner data-icon="inline-start" />}Deactivate access
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
