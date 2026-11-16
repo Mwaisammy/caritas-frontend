@@ -37,7 +37,7 @@ async function currentUserId() {
 function failure(error: unknown): ShareActionState {
   if (error instanceof GoApiError) {
     const messages: Record<number, string> = {400: "Check the details and try again.", 401: "Your session has expired.", 403: "You do not have permission for this action.", 404: "The share record was not found.", 409: "This action conflicts with the account's current state.", 504: "The share service took too long to respond."};
-    return {ok: false, retry: ![400, 401, 403, 404, 409, 422].includes(error.status), message: `${messages[error.status] ?? "The share service is unavailable."} Reference: ${error.requestId}`};
+    return {ok: false, retry: ![400, 401, 403, 404, 409, 422].includes(error.status), message: `${error.status === 403 ? error.detail ?? messages[403] : messages[error.status] ?? "The share service is unavailable."} Reference: ${error.requestId}`};
   }
   console.error("Unexpected share action failure", error);
   return {ok: false, retry: true, message: "Something went wrong. Please try again."};

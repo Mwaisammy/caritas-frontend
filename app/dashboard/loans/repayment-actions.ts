@@ -22,5 +22,5 @@ export async function recordRepaymentAction(_state: LoanActionState, formData: F
     revalidatePath(`/dashboard/loans/${parsed.data.loanId}`);
     return {ok: true, message: `Payment recorded: ${formatLoanMoney(result.allocation.principal)} principal, ${formatLoanMoney(result.allocation.interest)} interest, ${formatLoanMoney(result.allocation.penalty)} penalties, and ${formatLoanMoney(result.allocation.credit)} overpayment credit. See the refreshed balances and loan status below.`};
   }
-  catch (error) { if (error instanceof GoApiError) return {ok: false, message: `The repayment was not recorded. Reference: ${error.requestId}`}; console.error("Unexpected repayment failure", error); return {ok: false, message: "Something went wrong. Please try again."}; }
+  catch (error) { if (error instanceof GoApiError) return {ok: false, message: `${error.status === 403 ? error.detail ?? "Your role cannot record repayments." : "The repayment was not recorded."} Reference: ${error.requestId}`}; console.error("Unexpected repayment failure", error); return {ok: false, message: "Something went wrong. Please try again."}; }
 }

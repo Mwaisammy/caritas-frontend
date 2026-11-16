@@ -176,7 +176,7 @@ export type CashMutationState =
       deposit?: CashDeposit;
     };
 
-// CashLoanDetails keeps each payable loan beside its authoritative installment schedule.
+// CashLoanDetails keeps each payable loan beside any loaded installment schedule.
 export type CashLoanDetails = {
   loan: Loan;
   schedule: RepaymentSchedule[];
@@ -308,6 +308,7 @@ export async function findCashMemberAction(
     .object({
       lookupBy: z.enum(["memberNumber", "nationalId"]),
       lookup: z.string().trim().min(1, "Enter a member number or national ID."),
+      branchId: z.string().regex(/^[1-9]\d*$/),
     })
     .safeParse(Object.fromEntries(formData));
   if (!parsed.success)
@@ -326,9 +327,9 @@ export async function findCashMemberAction(
       fieldErrors: { lookup: ["Enter a valid member number."] },
     };
   let member: Member;
-  let branchId: string;
+  const branchId = parsed.data.branchId;
+  const started = performance.now();
   try {
-    branchId = (await getCashContext()).branchId;
     const identifier =
       parsed.data.lookupBy === "memberNumber"
         ? { branchId, memberNumber: parsed.data.lookup }
@@ -347,6 +348,7 @@ export async function findCashMemberAction(
       return { ok: false, message: "No member matched that identifier." };
     return failure(error);
   }
+  const memberMs = Math.round(performance.now() - started);
   const warnings: string[] = [];
   const [shares, loans] = await Promise.allSettled([
     getShareAccount({ branchId, nationalId: member.nationalId }),
@@ -373,6 +375,7 @@ export async function findCashMemberAction(
       );
     })(),
   ]);
+  const directoryMs = Math.round(performance.now() - started - memberMs);
   const sharesUnavailable =
     shares.status === "rejected" &&
     !(shares.reason instanceof GoApiError && shares.reason.status === 404);
@@ -387,31 +390,16 @@ export async function findCashMemberAction(
     shares.status === "fulfilled" ? shares.value.account : undefined;
   const shareAccount =
     account?.status === "SHARE_ACCOUNT_STATUS_ACTIVE" ? account : undefined;
-  const [balance, details] = await Promise.all([
-    shareAccount
-      ? getShareBalance({ accountId: shareAccount.id, consistencyStrong: true })
-          .then((r) => r.balance)
-          .catch((error) => {
-            warnings.push(
-              `Share balance unavailable. ${failure(error).message}`,
-            );
-            return undefined;
-          })
-      : undefined,
-    Promise.all(
-      (loans.status === "fulfilled" ? loans.value : []).map(async (loan) => {
-        try {
-          return {
-            loan,
-            schedule:
-              (await getRepaymentSchedule({ loanId: loan.id })).schedule ?? [],
-          };
-        } catch (error) {
-          return { loan, schedule: [], scheduleError: failure(error).message };
-        }
-      }),
-    ),
-  ]);
+  const balance = shareAccount
+    ? await getShareBalance({ accountId: shareAccount.id, consistencyStrong: true })
+        .then((r) => r.balance)
+        .catch((error) => {
+          warnings.push(`Share balance unavailable. ${failure(error).message}`);
+          return undefined;
+        })
+    : undefined;
+  const details = (loans.status === "fulfilled" ? loans.value : []).map((loan) => ({ loan, schedule: [] }));
+  console.info("Member lookup on server", { memberMs, directoryMs, detailsMs: Math.round(performance.now() - started - memberMs - directoryMs), loanCount: details.length });
   return {
     ok: true,
     member,
@@ -422,6 +410,20 @@ export async function findCashMemberAction(
     sharesUnavailable,
     loansUnavailable,
   };
+}
+
+// loadCashSchedulesAction fills optional loan dates after member search has completed.
+export async function loadCashSchedulesAction(loanIds: string[]) {
+  if (!z.array(z.uuid()).max(100).safeParse(loanIds).success) return {};
+  const rows = await Promise.all(loanIds.map(async (loanId) => {
+    try {
+      const result = await getRepaymentSchedule({ loanId });
+      return [loanId, result.schedule ?? []] as const;
+    } catch {
+      return [loanId, []] as const;
+    }
+  }));
+  return Object.fromEntries(rows);
 }
 
 // loadCashObligationsAction refreshes month-specific fees and charges independently of member identity.
@@ -644,6 +646,12 @@ export async function recoverCashReceiptAction(input: {
       message: "Cash receipt recovered.",
     };
   } catch (error) {
+    if (error instanceof GoApiError && error.status === 404)
+      return {
+        ok: false,
+        retry: true,
+        message: "No receipt was found for this saved contribution yet. Retry the same contribution; do not start a new payment.",
+      };
     return failure(error);
   }
 }

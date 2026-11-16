@@ -141,7 +141,7 @@ function failure(error: unknown, action: string): MemberActionResult {
     };
 
     return {ok: false, error: {
-      message: `${messages[error.status] ?? "The member service is unavailable."} Reference: ${error.requestId}`,
+      message: `${error.status === 403 ? error.detail ?? messages[403] : messages[error.status] ?? "The member service is unavailable."} Reference: ${error.requestId}`,
     }};
   }
 

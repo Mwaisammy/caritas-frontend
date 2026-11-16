@@ -94,22 +94,22 @@ async function DashboardContent() {
                 {
                   name: "Active",
                   value: Math.round((counts.active / totalLoans) * 100),
-                  color: "#9e1c2a",
+                  color: "#8f2638",
                 },
                 {
                   name: "Pending",
                   value: Math.round((counts.pending / totalLoans) * 100),
-                  color: "#f1b651",
+                  color: "#d9aa68",
                 },
                 {
                   name: "Overdue",
                   value: Math.round((counts.delinquent / totalLoans) * 100),
-                  color: "#ec7a7a",
+                  color: "#e88a7f",
                 },
                 {
                   name: "Closed",
                   value: Math.round((counts.closed / totalLoans) * 100),
-                  color: "#e6e2e2",
+                  color: "#cbd5e1",
                 },
               ]
             : null,

@@ -7,6 +7,7 @@ import { Eye, EyeOff, LoaderCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth-client";
+import { checkStaffAccess } from "./actions";
 
 type LoginFormProps = {
   callbackUrl: string;
@@ -39,6 +40,15 @@ const LoginForm = ({ callbackUrl }: LoginFormProps) => {
 
       if (signInError) {
         setError("The email or password you entered is incorrect.");
+        return;
+      }
+
+      const access = await checkStaffAccess();
+      if (access !== "active") {
+        await authClient.signOut();
+        setError(access === "denied"
+          ? "Your staff access has been deactivated. Contact an administrator."
+          : "The staff service is unavailable. Please try again.");
         return;
       }
 

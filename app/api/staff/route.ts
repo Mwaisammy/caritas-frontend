@@ -17,7 +17,9 @@ export async function GET(request: Request) {
       {
         message:
           error instanceof GoApiError && error.status === 403
-            ? "You do not have permission to manage staff access."
+            ? "Only system administrators can search and manage staff accounts."
+            : error instanceof GoApiError && error.status === 401
+              ? "Sign in to access staff records."
             : "Staff records could not be loaded.",
       },
       { status: error instanceof GoApiError ? error.status : 500 },
