@@ -42,7 +42,7 @@ import { formatMoney } from "./contribution-utils";
 
 // DarajaRecovery keeps missing callbacks and failed postings visible across browser sessions.
 // Without it, staff must ask members to pay again or inspect database rows manually.
-export function DarajaRecovery() {
+export function DarajaRecovery({ active }: { active: boolean }) {
   const [result, setResult] = useState<Awaited<
     ReturnType<typeof loadDarajaRecoveryAction>
   > | null>(null);
@@ -61,20 +61,22 @@ export function DarajaRecovery() {
   const amountMismatch = Boolean(verificationDraft.amount) && Number(verificationDraft.amount) !== expectedAmount;
 
   useEffect(() => {
-    let active = true;
+    if (!active) return;
+    let mounted = true;
     loadDarajaRecoveryAction().then((value) => {
-      if (active) {
+      if (mounted) {
         setResult(value);
         setNow(Date.now());
       }
     });
     return () => {
-      active = false;
+      mounted = false;
     };
-  }, []);
+  }, [active]);
 
   // Polling keeps scheduled checks and posting retries visible without staff repeatedly refreshing the case list.
   useEffect(() => {
+    if (!active) return;
     const timer = window.setInterval(async () => {
       if (document.visibilityState !== "visible" || selected || pending) return;
       const value = await loadDarajaRecoveryAction(pageToken);
@@ -82,7 +84,7 @@ export function DarajaRecovery() {
       setNow(Date.now());
     }, 15000);
     return () => window.clearInterval(timer);
-  }, [pageToken, selected, pending]);
+  }, [active, pageToken, selected, pending]);
 
   // refresh replaces the current page; keeping it avoids accidentally duplicating cursor results.
   const refresh = (token = "") =>

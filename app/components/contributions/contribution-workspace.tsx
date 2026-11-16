@@ -60,7 +60,7 @@ export function ContributionWorkspace() {
       <div hidden={method !== "mpesa"}>
         <div className="flex flex-col gap-6">
           <STKContributionFlow onLockChange={handleStkLock} />
-          <DarajaRecovery />
+          <DarajaRecovery active={method === "mpesa"} />
         </div>
       </div>
     </div>

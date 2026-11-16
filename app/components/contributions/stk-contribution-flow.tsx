@@ -109,7 +109,6 @@ export function STKContributionFlow({
   useEffect(() => {
     if (!saved || terminal) return;
     let active = true;
-    let pollCount = 0;
     const timer = setInterval(async () => {
       if (
         !submission.current ||
@@ -121,11 +120,8 @@ export function STKContributionFlow({
       setCheckingStatus(true);
       const savedSubmission = submission.current;
       try {
-        // Query Daraja every fifth status read to keep updates quick without over-querying it.
-        const queryProvider = ++pollCount % 5 === 0;
         const result = await checkSTKContributionAction(
           String(savedSubmission.get("idempotencyKey")),
-          queryProvider,
         );
         if (active && submission.current === savedSubmission && result?.ok) {
           setRequest(result.request);
@@ -176,7 +172,7 @@ export function STKContributionFlow({
         pollInFlight.current = false;
         if (active) setCheckingStatus(false);
       }
-    }, 3000);
+    }, 6000);
     return () => {
       active = false;
       clearInterval(timer);

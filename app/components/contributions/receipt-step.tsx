@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import {
   BanknoteIcon,
-  Loader,
   LoaderCircle,
   PrinterIcon,
   UserRoundPlusIcon,
@@ -43,6 +42,7 @@ export function ReceiptStep({
   const [statusError, setStatusError] = useState("");
   const [loadingDetails, startDetails] = useTransition();
   const [checking, startChecking] = useTransition();
+  const detailsRequest = useRef<{ key: string; promise: ReturnType<typeof loadCashReceiptDetailsAction> } | null>(null);
 
   const receipt =
     refreshed?.id === state.receipt?.id ? refreshed : state.receipt;
@@ -53,7 +53,12 @@ export function ReceiptStep({
     let active = true;
 
     startDetails(async () => {
-      const result = await loadCashReceiptDetailsAction(receipt.id).catch(
+      const key = `${receipt.id}:${receipt.status}`;
+      const promise = detailsRequest.current?.key === key
+        ? detailsRequest.current.promise
+        : loadCashReceiptDetailsAction(receipt.id);
+      detailsRequest.current = { key, promise };
+      const result = await promise.catch(
         () => undefined,
       );
 
@@ -217,6 +222,7 @@ export function ReceiptStep({
                   });
 
                   if (result?.ok && result.receipt) {
+                    detailsRequest.current = null;
                     setRefreshed(result.receipt);
                   } else {
                     setStatusError(
