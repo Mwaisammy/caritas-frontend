@@ -351,7 +351,7 @@ export async function findCashMemberAction(
   const memberMs = Math.round(performance.now() - started);
   const warnings: string[] = [];
   const [shares, loans] = await Promise.allSettled([
-    getShareAccount({ branchId, nationalId: member.nationalId }),
+    getShareAccount({ branchId, memberId: member.id }),
     (async () => {
       const rows: Loan[] = [];
       let pageToken = "";

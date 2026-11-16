@@ -2,6 +2,7 @@ import "server-only";
 
 import { headers } from "next/headers";
 import { cache } from "react";
+import { APIError } from "better-auth";
 
 import { auth } from "@/lib/auth";
 import type {
@@ -27,17 +28,14 @@ export class GoApiError extends Error {
   }
 }
 
-// getAuthorization avoids repeating session and token work during one server render.
+// getAuthorization shares token work within one server render; the token endpoint validates the session itself.
 const getAuthorization = cache(async () => {
   const requestHeaders = await headers();
-  const session = await auth.api.getSession({ headers: requestHeaders });
-
-  if (!session) {
-    return undefined;
-  }
-
-  const result = await auth.api.getToken({ headers: requestHeaders });
-  const token = result.token?.trim();
+  const result = await auth.api.getToken({ headers: requestHeaders }).catch((error: unknown) => {
+    if (error instanceof APIError && error.statusCode === 401) return undefined;
+    throw error;
+  });
+  const token = result?.token?.trim();
 
   if (!token) {
     return undefined;
