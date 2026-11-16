@@ -604,24 +604,21 @@
     page-break-inside: avoid;
   }
 
-  html:has(.ceep-print) body * {
-    visibility: hidden;
+  body:has(.ceep-print) *:not(:has(.ceep-print)):not(.ceep-print):not(.ceep-print *) {
+    display: none !important;
   }
 
-  html:has(.ceep-print) .ceep-print,
-  html:has(.ceep-print) .ceep-print * {
-    visibility: visible;
+  body:has(.ceep-print) *:has(.ceep-print):not(.ceep-print) {
+    display: contents !important;
   }
 
-  .ceep-print,
-  .ceep-print * {
-    visibility: visible;
+  body:has(.ceep-print) {
+    page: ceep;
+    margin: 0;
   }
 
   .ceep-print {
-    page: ceep;
-    position: absolute;
-    inset: 0;
+    display: block;
     width: 100%;
     color: black;
     background: white;
@@ -638,7 +635,23 @@
 
   .ceep-table {
     width: 100%;
-    font-size: 7pt;
+    table-layout: fixed;
+    font-size: 6pt;
+  }
+
+  .ceep-table th:nth-child(1),
+  .ceep-table td:nth-child(1) {
+    width: 3%;
+  }
+
+  .ceep-table th:nth-child(2),
+  .ceep-table td:nth-child(2) {
+    width: 4%;
+  }
+
+  .ceep-table th:nth-child(3),
+  .ceep-table td:nth-child(3) {
+    width: 14%;
   }
 
   .ceep-table thead {
@@ -658,13 +671,14 @@
   .ceep-table td {
     position: static;
     min-width: 0;
-    padding: 4px;
+    padding: 2px;
     white-space: normal;
+    overflow-wrap: anywhere;
   }
 }
 
 @page ceep {
-  size: A3 landscape;
+  size: 420mm 297mm;
   margin: 12mm;
 
   @bottom-right {
