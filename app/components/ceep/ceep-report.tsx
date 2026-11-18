@@ -29,6 +29,7 @@ export function CeepReport({ initialMonth, currentMonth }: { initialMonth: strin
   const canFinalize = loaded?.canApprove && !finalized && report?.canFinalize
     && !report.hasErrors && !!report.previewHash && !mustReload;
 
+
   // Quotes all CSV cells and neutralizes spreadsheet formulas in member names and report headings.
   function downloadCsv() {
     if (!report) return;

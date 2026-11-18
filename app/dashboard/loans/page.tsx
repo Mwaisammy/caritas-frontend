@@ -1,11 +1,23 @@
+import { Suspense } from "react";
+
 import { LoansStats } from "@/app/components/loans/loan-stats";
 import { LoansOverview } from "@/app/components/loans/loans-overview";
 import { LoansWelcome } from "@/app/components/loans/loans-welcome";
 import { RecentApplications } from "@/app/components/loans/recent-applications";
 import { getLoans } from "@/lib/api/loans";
 import { getMember } from "@/lib/server/members-api";
+import LoansLoading from "./loading";
 
-export default async function LoansPage() {
+export default function LoansPage() {
+  return (
+    <Suspense fallback={<LoansLoading />}>
+      <LoansContent />
+    </Suspense>
+  );
+}
+
+// LoansContent keeps the member API calls inside the route's streaming boundary.
+async function LoansContent() {
   const loanData = await getLoans();
   const members = await Promise.all(
     [...new Map(loanData.loans.map((loan) => [loan.memberId, loan])).values()].map(

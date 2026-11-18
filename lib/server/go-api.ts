@@ -1,6 +1,7 @@
 import "server-only";
 
 import { headers } from "next/headers";
+import { connection } from "next/server";
 import { cache } from "react";
 import { APIError } from "better-auth";
 
@@ -49,7 +50,7 @@ export async function goApiPost<T>(
   body: unknown,
   method = "POST",
 ): Promise<T> {
-  
+  await connection();
   // this will work in the edge runtime
   const requestId = crypto.randomUUID(); 
 
