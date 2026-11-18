@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 
 import { CreditBalance } from "@/app/components/loans-ui/credit-balance";
@@ -17,6 +18,7 @@ import {
   getRepaymentSchedule,
 } from "@/lib/server/repayments-api";
 import { LOAN_DETAIL_PAGE_SIZE } from "../config";
+import LoansLoading from "../loading";
 
 // loanUrl advances one optional section cursor while preserving the other section's position.
 function loanUrl(loanId: string, historyToken = "", guarantorToken = "") {
@@ -27,7 +29,22 @@ function loanUrl(loanId: string, historyToken = "", guarantorToken = "") {
 }
 
 // LoanPage composes authoritative loan, guarantor, repayment, and credit data into one workspace.
-export default async function LoanPage({
+export default function LoanPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ loanId: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  return (
+    <Suspense fallback={<LoansLoading />}>
+      <LoanContent params={params} searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+// LoanContent keeps session-bound API reads inside the page's streaming boundary.
+async function LoanContent({
   params,
   searchParams,
 }: {
